@@ -1,0 +1,495 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core User Models
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String?
+  level             Int      @default(1)
+  totalXP           Int      @default(0)
+  characterClassId  String?
+  characterClass    CharacterClass? @relation(fields: [characterClassId], references: [id])
+  stats             Json?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  referredReferrals  Referral[] @relation("Referrer")
+  referralAsReferred Referral[] @relation("ReferredUser")
+  referralLinks     ReferralLink[]
+  referralCampaigns ReferralCampaign[]
+  userAchievements  UserAchievement[]
+  userProgress      UserProgress[]
+  userBadges        UserBadge[]
+  userTitles        UserTitle[]
+  activityLogs      ActivityLog[]
+
+  @@map("users")
+}
+
+// Character Classes
+model CharacterClass {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  emoji           String
+  color           String
+  xpMultiplier    Float    @default(1.0)
+  specialAbility  String
+  playstyle       String   // 'speed' | 'value' | 'volume'
+  progression     Json?
+  requirements    Json?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  users           User[]
+  userProgress    UserProgress[]
+
+  @@map("character_classes")
+}
+
+
+// Achievement System
+model AchievementCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  color       String
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  achievements Achievement[]
+
+  @@map("achievement_categories")
+}
+
+model AchievementRarity {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  color       String
+  multiplier  Float    @default(1.0)
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  achievements Achievement[]
+
+  @@map("achievement_rarities")
+}
+
+model Achievement {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  icon         String
+  categoryId   String
+  rarityId     String
+  points       Int      @default(0)
+  requirements Json?
+  rewards      Json?
+  maxProgress   Int?
+  isActive      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  category     AchievementCategory @relation(fields: [categoryId], references: [id])
+  rarity       AchievementRarity   @relation(fields: [rarityId], references: [id])
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id                String    @id @default(cuid())
+  userId            String
+  achievementId     String
+  progress          Int       @default(0)
+  maxProgress       Int       @default(1)
+  unlockedAt        DateTime?
+  lastProgressedAt  DateTime  @default(now())
+  metadata          Json?
+
+  // Relations
+  user              User      @relation(fields: [userId], references: [id])
+  achievement       Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// User Progress Tracking
+model UserProgress {
+  id                 String   @id @default(cuid())
+  userId             String
+  characterClassId   String?
+  level              Int      @default(1)
+  totalXP            Int      @default(0)
+  currentLevelXP     Int      @default(0)
+  xpToNextLevel      Int      @default(1000)
+  referralCount      Int      @default(0)
+  completedReferrals Int      @default(0)
+  totalValue         Float    @default(0.0)
+  streakDays         Int      @default(0)
+  lastActivity       DateTime @default(now())
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user               User             @relation(fields: [userId], references: [id])
+  characterClass     CharacterClass?  @relation(fields: [characterClassId], references: [id])
+
+  @@unique([userId])
+  @@map("user_progress")
+}
+
+// User Badges and Titles
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String
+  color       String
+  category    String?
+  requirements Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userBadges   UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime?
+  metadata  Json?
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Title {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  category    String?
+  requirements Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userTitles  UserTitle[]
+
+  @@map("titles")
+}
+
+model UserTitle {
+  id        String   @id @default(cuid())
+  userId    String
+  titleId   String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime?
+  isActive  Boolean  @default(true)
+  metadata  Json?
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  title     Title    @relation(fields: [titleId], references: [id])
+
+  @@unique([userId, titleId])
+  @@map("user_titles")
+}
+
+// Activity Logging
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // 'referral', 'level_up', 'achievement', 'xp_gained', etc.
+  description String
+  value       Float?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+// Webhook Tracking
+model WebhookLog {
+  id            String   @id @default(cuid())
+  webhookId     String
+  requestId     String   @unique
+  type          String
+  status        String   // 'pending', 'processed', 'failed'
+  payload       Json
+  response      Json?
+  processedAt   DateTime?
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  @@map("webhook_logs")
+}
+
+// Social Features
+model Friend {
+  id          String   @id @default(cuid())
+  userId      String
+  friendId    String
+  status      String   @default("pending") // 'pending', 'accepted', 'rejected', 'blocked'
+  requestedAt DateTime @default(now())
+  respondedAt DateTime?
+  metadata    Json?
+
+  // Relations
+  user        User     @relation("UserFriends", fields: [userId], references: [id])
+  friend      User     @relation("FriendUsers", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+  @@map("friends")
+}
+
+model FriendRequest {
+  id          String   @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      String   @default("pending") // 'pending', 'accepted', 'rejected', 'cancelled'
+  message     String?
+  requestedAt DateTime @default(now())
+  respondedAt DateTime?
+  metadata    Json?
+
+  // Relations
+  requester   User     @relation("SentFriendRequests", fields: [requesterId], references: [id])
+  recipient   User     @relation("ReceivedFriendRequests", fields: [recipientId], references: [id])
+
+  @@map("friend_requests")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  leaderId    String
+  avatar      String?
+  banner      String?
+  maxMembers  Int      @default(10)
+  isPrivate   Boolean  @default(false)
+  inviteCode  String   @unique
+  settings    Json?
+  stats       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  leader      User       @relation("TeamLeader", fields: [leaderId], references: [id])
+  members     TeamMember[]
+  invites     TeamInvite[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id           String   @id @default(cuid())
+  teamId       String
+  userId       String
+  role         String   @default("member") // 'leader', 'admin', 'member'
+  joinedAt     DateTime @default(now())
+  contributions Json?
+  isActive     Boolean  @default(true)
+
+  // Relations
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User      @relation("TeamMembers", fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model TeamInvite {
+  id         String    @id @default(cuid())
+  teamId     String
+  inviterId  String
+  inviteeId  String
+  status     String    @default("pending") // 'pending', 'accepted', 'rejected', 'expired'
+  message    String?
+  invitedAt  DateTime  @default(now())
+  expiresAt  DateTime
+  respondedAt DateTime?
+
+  // Relations
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  inviter    User       @relation("TeamInviter", fields: [inviterId], references: [id])
+  invitee    User       @relation("TeamInvitee", fields: [inviteeId], references: [id])
+
+  @@unique([teamId, inviteeId])
+  @@map("team_invites")
+}
+
+model SocialProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  username       String?
+  avatar         String?
+  banner         String?
+  bio            String?
+  location       String?
+  website        String?
+  socialLinks    Json?
+  privacySettings Json?
+  activityStatus String   @default("offline") // 'online', 'offline', 'away', 'busy'
+  lastSeen       DateTime @default(now())
+  stats          Json?
+  achievements   Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@map("social_profiles")
+}
+
+model SocialActivity {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String
+  description String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  isPublic    Boolean   @default(true)
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("social_activity")
+}
+
+// Rate Limiting (if using database for storage)
+model RateLimitEntry {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  count     Int      @default(0)
+  resetTime DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rate_limit_entries")
+}
+
+// Referral Tracking System
+model Referral {
+  id              String    @id @default(cuid())
+  referrerId      String
+  referredUserId  String
+  status          String    @default("pending") // 'pending', 'completed', 'expired', 'cancelled'
+  value           Float
+  commission      Float
+  commissionRate  Float
+  source          String?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+  expiresAt       DateTime?
+
+  // Relations
+  referrer        User      @relation("Referrer", fields: [referrerId], references: [id])
+  referredUser    User      @relation("ReferredUser", fields: [referredUserId], references: [id])
+
+  @@map("referrals")
+}
+
+model ReferralLink {
+  id          String   @id @default(cuid())
+  userId      String
+  campaignId  String?
+  code        String   @unique
+  url         String
+  isActive    Boolean  @default(true)
+  clicks      Int      @default(0)
+  uniqueClicks Int     @default(0)
+  conversions Int      @default(0)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  // Relations
+  user        User                   @relation(fields: [userId], references: [id])
+  campaign    ReferralCampaign?      @relation(fields: [campaignId], references: [id])
+  clicks      ReferralClick[]
+
+  @@map("referral_links")
+}
+
+model ReferralClick {
+  id            String    @id @default(cuid())
+  linkId        String
+  ip            String?
+  userAgent     String?
+  referer       String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmContent    String?
+  utmTerm       String?
+  isUnique      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  link          ReferralLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@map("referral_clicks")
+}
+
+model ReferralCampaign {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String
+  commissionRate  Float
+  isActive        Boolean  @default(true)
+  referralCode    String   @unique
+  currentValue    Float    @default(0)
+  referralCount   Int      @default(0)
+  maxReferrals    Int?
+  settings        Json?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime?
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id])
+  links           ReferralLink[]
+
+  @@map("referral_campaigns")
+}

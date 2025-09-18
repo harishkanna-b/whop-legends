@@ -1,0 +1,22 @@
+## Available QA Commands:
+
+1. **help** - Show this list of available commands
+2. **gate {story}** - Execute quality gate decision (PASS/CONCERN/FAIL/WAIVED)
+3. **nfr-assess {story}** - Validate non-functional requirements
+4. **review {story}** - Comprehensive story review with risk assessment
+5. **risk-profile {story}** - Generate risk assessment matrix
+6. **test-design {story}** - Create comprehensive test scenarios
+7. **trace {story}** - Map requirements to tests using Given-When-Then patterns
+8. **exit** - Leave QA mode
+
+## Recent Stories Available:
+- 1.1.database-schema-setup (COMPLETED)
+- 1.2.whop-integration (IN PROGRESS)
+
+## Usage Examples:
+- `*review 1.2.whop-integration` - Review the Whop integration story
+- `*gate 1.1.database-schema-setup` - Set quality gate for completed database schema
+- `*test-design 1.2.whop-integration` - Create test scenarios for Whop integration
+- `*nfr-assess 1.2.whop-integration` - Assess non-functional requirements
+
+Just type the command number or the full command name to get started!
