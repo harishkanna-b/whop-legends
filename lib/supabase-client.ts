@@ -158,6 +158,40 @@ export interface Database {
           end_date?: string | null;
         };
       };
+      user_quests: {
+        Row: {
+          id: string;
+          user_id: string;
+          quest_id: string;
+          progress_value: number;
+          is_completed: boolean;
+          completed_at: string | null;
+          reward_claimed: boolean;
+          reward_claimed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          quest_id: string;
+          progress_value?: number;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          reward_claimed?: boolean;
+          reward_claimed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          quest_id?: string;
+          progress_value?: number;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          reward_claimed?: boolean;
+          reward_claimed_at?: string | null;
+        };
+      };
       referrals: {
         Row: {
           id: string;
@@ -196,6 +230,154 @@ export interface Database {
           commission_status?: 'pending' | 'paid' | 'cancelled';
           whop_payment_id?: string | null;
           whop_webhook_id?: string | null;
+        };
+      };
+      achievements: {
+        Row: {
+          id: string;
+          name: string;
+          display_name: string;
+          description: string | null;
+          category: string;
+          rarity: 'common' | 'rare' | 'epic' | 'legendary';
+          icon_url: string | null;
+          requirements: Record<string, any> | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name: string;
+          description?: string | null;
+          category: string;
+          rarity: 'common' | 'rare' | 'epic' | 'legendary';
+          icon_url?: string | null;
+          requirements?: Record<string, any> | null;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          display_name?: string;
+          description?: string | null;
+          category?: string;
+          rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+          icon_url?: string | null;
+          requirements?: Record<string, any> | null;
+          is_active?: boolean;
+        };
+      };
+      user_achievements: {
+        Row: {
+          id: string;
+          user_id: string;
+          achievement_id: string;
+          unlocked_at: string;
+          progress_data: Record<string, any> | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          achievement_id: string;
+          unlocked_at?: string;
+          progress_data?: Record<string, any> | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          achievement_id?: string;
+          unlocked_at?: string;
+          progress_data?: Record<string, any> | null;
+        };
+      };
+      guilds: {
+        Row: {
+          id: string;
+          company_id: string;
+          name: string;
+          description: string | null;
+          leader_id: string;
+          member_count: number;
+          total_referrals: number;
+          total_commission: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          name: string;
+          description?: string | null;
+          leader_id: string;
+          member_count?: number;
+          total_referrals?: number;
+          total_commission?: number;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          name?: string;
+          description?: string | null;
+          leader_id?: string;
+          member_count?: number;
+          total_referrals?: number;
+          total_commission?: number;
+          is_active?: boolean;
+        };
+      };
+      guild_members: {
+        Row: {
+          id: string;
+          guild_id: string;
+          user_id: string;
+          role: 'leader' | 'officer' | 'member';
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          guild_id: string;
+          user_id: string;
+          role?: 'leader' | 'officer' | 'member';
+          joined_at?: string;
+        };
+        Update: {
+          id?: string;
+          guild_id?: string;
+          user_id?: string;
+          role?: 'leader' | 'officer' | 'member';
+          joined_at?: string;
+        };
+      };
+      creator_settings: {
+        Row: {
+          id: string;
+          company_id: string;
+          quest_templates: Record<string, any> | null;
+          reward_settings: Record<string, any> | null;
+          notification_preferences: Record<string, any> | null;
+          analytics_settings: Record<string, any> | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_id: string;
+          quest_templates?: Record<string, any> | null;
+          reward_settings?: Record<string, any> | null;
+          notification_preferences?: Record<string, any> | null;
+          analytics_settings?: Record<string, any> | null;
+        };
+        Update: {
+          id?: string;
+          company_id?: string;
+          quest_templates?: Record<string, any> | null;
+          reward_settings?: Record<string, any> | null;
+          notification_preferences?: Record<string, any> | null;
+          analytics_settings?: Record<string, any> | null;
         };
       };
     };

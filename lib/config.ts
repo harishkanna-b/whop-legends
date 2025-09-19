@@ -59,6 +59,11 @@ class Config {
     return Config.instance
   }
 
+  // Reset instance for testing
+  static resetInstance(): void {
+    Config.instance = undefined
+  }
+
   private loadConfig(): AppConfig {
     const environment = (process.env.NODE_ENV || 'development') as AppConfig['environment']
 

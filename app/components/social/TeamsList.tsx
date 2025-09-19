@@ -118,26 +118,26 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
   if (loading) {
     return (
-      <div className=\"flex items-center justify-center h-64\">
-        <div className=\"animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600\"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className=\"bg-white rounded-lg shadow-lg p-6\">
-      <div className=\"flex justify-between items-center mb-6\">
-        <h2 className=\"text-2xl font-bold\">Teams</h2>
-        <div className=\"flex space-x-2\">
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Teams</h2>
+        <div className="flex space-x-2">
           <button
             onClick={() => setShowJoinModal(true)}
-            className=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors\"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             Join Team
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors\"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Create Team
           </button>
@@ -145,7 +145,7 @@ export default function TeamsList({ userId }: TeamsListProps) {
       </div>
 
       {/* Tabs */}
-      <div className=\"flex space-x-4 mb-6\">
+      <div className="flex space-x-4 mb-6">
         <button
           className={`px-4 py-2 rounded-lg ${
             activeTab === 'my-teams'
@@ -180,39 +180,39 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
       {/* My Teams */}
       {activeTab === 'my-teams' && (
-        <div className=\"space-y-4\">
+        <div className="space-y-4">
           {teams.length === 0 ? (
-            <p className=\"text-gray-500 text-center py-8\">You're not part of any teams yet. Create or join one!</p>
+            <p className="text-gray-500 text-center py-8">You're not part of any teams yet. Create or join one!</p>
           ) : (
             teams.map((team) => (
-              <div key={team.id} className=\"flex items-center justify-between p-4 bg-gray-50 rounded-lg\">
-                <div className=\"flex items-center space-x-4\">
-                  <div className=\"w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold\">
+              <div key={team.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
                     {team.name[0]}
                   </div>
                   <div>
-                    <h3 className=\"font-semibold\">{team.name}</h3>
-                    <p className=\"text-sm text-gray-500\">{team.description}</p>
-                    <p className=\"text-xs text-gray-400\">
+                    <h3 className="font-semibold">{team.name}</h3>
+                    <p className="text-sm text-gray-500">{team.description}</p>
+                    <p className="text-xs text-gray-400">
                       {team.members.length}/{team.maxMembers} members • Led by {team.leader.username}
                     </p>
                   </div>
                 </div>
-                <div className=\"flex space-x-2\">
+                <div className="flex space-x-2">
                   {team.leaderId === userId && (
-                    <span className=\"px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs\">
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
                       Leader
                     </span>
                   )}
                   <button
                     onClick={() => leaveTeam(team.id)}
-                    className=\"px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors\"
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                   >
                     Leave
                   </button>
                   <button
                     onClick={() => window.location.href = `/team/${team.id}`}
-                    className=\"px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors\"
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     View
                   </button>
@@ -225,34 +225,34 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
       {/* Discover Teams */}
       {activeTab === 'discover' && (
-        <div className=\"space-y-4\">
+        <div className="space-y-4">
           {discoverableTeams.length === 0 ? (
-            <p className=\"text-gray-500 text-center py-8\">No discoverable teams available.</p>
+            <p className="text-gray-500 text-center py-8">No discoverable teams available.</p>
           ) : (
             discoverableTeams.map((team) => (
-              <div key={team.id} className=\"flex items-center justify-between p-4 bg-gray-50 rounded-lg\">
-                <div className=\"flex items-center space-x-4\">
-                  <div className=\"w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold\">
+              <div key={team.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
                     {team.name[0]}
                   </div>
                   <div>
-                    <h3 className=\"font-semibold\">{team.name}</h3>
-                    <p className=\"text-sm text-gray-500\">{team.description}</p>
-                    <p className=\"text-xs text-gray-400\">
+                    <h3 className="font-semibold">{team.name}</h3>
+                    <p className="text-sm text-gray-500">{team.description}</p>
+                    <p className="text-xs text-gray-400">
                       {team.members.length}/{team.maxMembers} members • {team.isPrivate ? 'Private' : 'Public'}
                     </p>
                   </div>
                 </div>
-                <div className=\"flex space-x-2\">
+                <div className="flex space-x-2">
                   <button
                     onClick={() => setShowJoinModal(true)}
-                    className=\"px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors\"
+                    className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
                   >
                     Join
                   </button>
                   <button
                     onClick={() => window.location.href = `/team/${team.id}`}
-                    className=\"px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors\"
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     View
                   </button>
@@ -265,34 +265,34 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
       {/* Team Invites */}
       {activeTab === 'invites' && (
-        <div className=\"space-y-4\">
+        <div className="space-y-4">
           {invites.length === 0 ? (
-            <p className=\"text-gray-500 text-center py-8\">No pending team invitations.</p>
+            <p className="text-gray-500 text-center py-8">No pending team invitations.</p>
           ) : (
             invites.map((invite) => (
-              <div key={invite.id} className=\"flex items-center justify-between p-4 bg-gray-50 rounded-lg\">
-                <div className=\"flex items-center space-x-4\">
-                  <div className=\"w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold\">
+              <div key={invite.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
                     {invite.team.name[0]}
                   </div>
                   <div>
-                    <h3 className=\"font-semibold\">{invite.team.name}</h3>
-                    <p className=\"text-sm text-gray-500\">{invite.message || 'No message'}</p>
-                    <p className=\"text-xs text-gray-400\">
+                    <h3 className="font-semibold">{invite.team.name}</h3>
+                    <p className="text-sm text-gray-500">{invite.message || 'No message'}</p>
+                    <p className="text-xs text-gray-400">
                       Invited by {invite.inviter.username} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                <div className=\"flex space-x-2\">
+                <div className="flex space-x-2">
                   <button
                     onClick={() => respondToInvite(invite.id, 'accept')}
-                    className=\"px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors\"
+                    className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => respondToInvite(invite.id, 'reject')}
-                    className=\"px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors\"
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                   >
                     Reject
                   </button>
@@ -305,58 +305,58 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
       {/* Create Team Modal */}
       {showCreateModal && (
-        <div className=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50\">
-          <div className=\"bg-white rounded-lg p-6 w-full max-w-md\">
-            <h3 className=\"text-xl font-bold mb-4\">Create Team</h3>
-            <form action={createTeam} className=\"space-y-4\">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Create Team</h3>
+            <form action={createTeam} className="space-y-4">
               <div>
-                <label className=\"block text-sm font-medium text-gray-700 mb-1\">Team Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Team Name</label>
                 <input
-                  type=\"text\"
-                  name=\"name\"
+                  type="text"
+                  name="name"
                   required
-                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className=\"block text-sm font-medium text-gray-700 mb-1\">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
-                  name=\"description\"
+                  name="description"
                   required
-                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
                 />
               </div>
               <div>
-                <label className=\"block text-sm font-medium text-gray-700 mb-1\">Max Members</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
                 <input
-                  type=\"number\"
-                  name=\"maxMembers\"
-                  min=\"2\"
-                  max=\"50\"
-                  defaultValue=\"10\"
-                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"
+                  type="number"
+                  name="maxMembers"
+                  min="2"
+                  max="50"
+                  defaultValue="10"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className=\"flex items-center\">
+              <div className="flex items-center">
                 <input
-                  type=\"checkbox\"
-                  name=\"isPrivate\"
-                  className=\"mr-2\"
+                  type="checkbox"
+                  name="isPrivate"
+                  className="mr-2"
                 />
-                <label className=\"text-sm font-medium text-gray-700\">Private Team</label>
+                <label className="text-sm font-medium text-gray-700">Private Team</label>
               </div>
-              <div className=\"flex justify-end space-x-2\">
+              <div className="flex justify-end space-x-2">
                 <button
-                  type=\"button\"
+                  type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className=\"px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors\"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  type=\"submit\"
-                  className=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors\"
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Create
                 </button>
@@ -368,38 +368,38 @@ export default function TeamsList({ userId }: TeamsListProps) {
 
       {/* Join Team Modal */}
       {showJoinModal && (
-        <div className=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50\">
-          <div className=\"bg-white rounded-lg p-6 w-full max-w-md\">
-            <h3 className=\"text-xl font-bold mb-4\">Join Team</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Join Team</h3>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget)
                 joinTeamViaCode(formData.get('inviteCode') as string)
               }}
-              className=\"space-y-4\"
+              className="space-y-4"
             >
               <div>
-                <label className=\"block text-sm font-medium text-gray-700 mb-1\">Invite Code</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Invite Code</label>
                 <input
-                  type=\"text\"
-                  name=\"inviteCode\"
+                  type="text"
+                  name="inviteCode"
                   required
-                  placeholder=\"Enter team invite code\"
-                  className=\"w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500\"
+                  placeholder="Enter team invite code"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className=\"flex justify-end space-x-2\">
+              <div className="flex justify-end space-x-2">
                 <button
-                  type=\"button\"
+                  type="button"
                   onClick={() => setShowJoinModal(false)}
-                  className=\"px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors\"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  type=\"submit\"
-                  className=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors\"
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   Join
                 </button>

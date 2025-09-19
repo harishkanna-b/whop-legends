@@ -11,24 +11,44 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
 process.env.WHOP_WEBHOOK_SECRET = 'test-webhook-secret-for-testing';
 
 // Global Supabase mock
+const createMockSupabaseClient = () => ({
+  from: jest.fn().mockReturnThis(),
+  select: jest.fn().mockReturnThis(),
+  insert: jest.fn().mockReturnThis(),
+  update: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  neq: jest.fn().mockReturnThis(),
+  gt: jest.fn().mockReturnThis(),
+  gte: jest.fn().mockReturnThis(),
+  lt: jest.fn().mockReturnThis(),
+  lte: jest.fn().mockReturnThis(),
+  like: jest.fn().mockReturnThis(),
+  ilike: jest.fn().mockReturnThis(),
+  in: jest.fn().mockReturnThis(),
+  order: jest.fn().mockReturnThis(),
+  range: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  offset: jest.fn().mockReturnThis(),
+  single: jest.fn().mockReturnThis(),
+  maybeSingle: jest.fn().mockReturnThis(),
+  rpc: jest.fn().mockReturnThis(),
+  channel: jest.fn().mockReturnThis(),
+  auth: {
+    getUser: jest.fn(),
+    signUp: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+    updateUser: jest.fn(),
+    resetPasswordForEmail: jest.fn(),
+  },
+  or: jest.fn().mockReturnThis(),
+  match: jest.fn().mockReturnThis(),
+});
+
 jest.mock('@/lib/supabase-client', () => ({
-  supabase: {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    gte: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    single: jest.fn().mockReturnThis(),
-    or: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    maybeSingle: jest.fn().mockReturnThis(),
-    zremrangebyscore: jest.fn().mockReturnThis(),
-    zadd: jest.fn().mockReturnThis(),
-    expire: jest.fn().mockReturnThis(),
-    zcard: jest.fn().mockReturnThis(),
-  }
+  supabase: createMockSupabaseClient(),
+  supabaseService: createMockSupabaseClient(),
 }));
 
 // Global test setup

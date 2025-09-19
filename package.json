@@ -24,7 +24,8 @@
 		"@whop/react": "0.2.36",
 		"next": "15.3.2",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0"
+		"react-dom": "^19.0.0",
+		"redis": "^5.8.2"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",

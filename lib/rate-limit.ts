@@ -41,6 +41,10 @@ try {
   console.log('Redis not available, using mock for rate limiting');
 }
 
+// Import modern Redis configuration
+import { initializeRedis as initializeModernRedis } from './redis-config';
+import { redisUtils } from './redis-config';
+
 interface RateLimitResult {
   allowed: boolean;
   retryAfter?: number;
@@ -50,6 +54,7 @@ interface RateLimitResult {
 interface RateLimitEntry {
   count: number;
   resetTime: number;
+  requests?: number[]; // Array to track individual request timestamps for sliding window
 }
 
 // Redis client for production rate limiting (already declared above)
@@ -102,18 +107,124 @@ export const rateLimitMiddleware = async (
     keyGenerator = defaultKeyGenerator,
   } = options;
 
-  const key = keyGenerator(req);
-  const now = Date.now();
-
-  // Try Redis first if available
-  const redis = await initializeRedis();
-  if (redis) {
-    return checkRedisRateLimit(redis, key, now, windowMs, maxRequests);
+  // Comprehensive parameter validation based on express-rate-limit best practices
+  if (typeof windowMs !== 'number' || windowMs <= 0) {
+    return {
+      allowed: false,
+      retryAfter: 0,
+      remaining: 0,
+    };
   }
 
-  // Fallback to in-memory rate limiting
-  return checkMemoryRateLimit(key, now, windowMs, maxRequests);
+  if (typeof maxRequests !== 'number' || maxRequests < 0) {
+    return {
+      allowed: false,
+      retryAfter: 0,
+      remaining: 0,
+    };
+  }
+
+  // Ensure keyGenerator is always a valid function
+  const actualKeyGenerator = typeof keyGenerator === 'function' ? keyGenerator : defaultKeyGenerator;
+
+  try {
+    const key = actualKeyGenerator(req);
+    if (typeof key !== 'string' || key.length === 0) {
+      return {
+        allowed: false,
+        retryAfter: 0,
+        remaining: 0,
+      };
+    }
+
+    const now = Date.now();
+
+    // Try modern Redis first for production scalability
+    const modernRedis = await initializeModernRedis();
+    if (modernRedis) {
+      return checkModernRedisRateLimit(modernRedis, key, now, windowMs, maxRequests);
+    }
+
+    // Fallback to legacy Redis if available
+    const redis = await initializeRedis();
+    if (redis) {
+      return checkRedisRateLimit(redis, key, now, windowMs, maxRequests);
+    }
+
+    // Fallback to in-memory rate limiting
+    return checkMemoryRateLimit(key, now, windowMs, maxRequests);
+  } catch (error) {
+    console.error('Error in rate limiting middleware:', error);
+    // Fail open - allow request but log the error
+    return {
+      allowed: true,
+      remaining: Math.max(0, maxRequests - 1), // Conservative estimate
+    };
+  }
 };
+
+async function checkModernRedisRateLimit(
+  redis: any,
+  key: string,
+  now: number,
+  windowMs: number,
+  maxRequests: number
+): Promise<RateLimitResult> {
+  try {
+    const redisKey = `rate_limit:${key}`;
+    const windowStart = now - windowMs;
+
+    // Use Redis transaction for atomic operations
+    const multi = redis.multi();
+
+    // Remove old entries
+    multi.zRemRangeByScore(redisKey, 0, windowStart);
+
+    // Get current count BEFORE adding new request
+    multi.zCard(redisKey);
+
+    // Add current request with timestamp
+    multi.zAdd(redisKey, [{ score: now, value: `${now}-${Math.random()}` }]);
+
+    // Set expiration
+    multi.expire(redisKey, Math.ceil(windowMs / 1000));
+
+    // Get earliest timestamp for reset time calculation
+    multi.zRange(redisKey, 0, 0, 'WITHSCORES');
+
+    const results = await multi.exec();
+
+    if (!results || results.length < 4) {
+      throw new Error('Redis transaction failed');
+    }
+
+    // Get count BEFORE adding current request
+    const countBeforeAdd = (results[1] && typeof results[1] === 'number') ? results[1] : 0;
+    const earliestEntry = results[3];
+
+    // Check if this request exceeds the limit (after adding)
+    if (countBeforeAdd + 1 > maxRequests) {
+      const resetTime = earliestEntry && earliestEntry.length > 0
+        ? parseInt(earliestEntry[0].score) + windowMs
+        : now + windowMs;
+      const retryAfter = Math.ceil((resetTime - now) / 1000);
+
+      return {
+        allowed: false,
+        retryAfter,
+        remaining: 0,
+      };
+    }
+
+    return {
+      allowed: true,
+      remaining: Math.max(0, maxRequests - (countBeforeAdd + 1)),
+    };
+  } catch (error) {
+    console.error('Modern Redis rate limiting error, falling back to memory:', error);
+    return checkMemoryRateLimit(key, now, windowMs, maxRequests);
+  }
+}
 
 async function checkRedisRateLimit(
   redis: any,
@@ -132,23 +243,28 @@ async function checkRedisRateLimit(
     // Remove old entries
     pipeline.zremrangebyscore(redisKey, 0, windowStart);
 
+    // Get count BEFORE adding current request
+    pipeline.zcard(redisKey);
+
     // Add current request
     pipeline.zadd(redisKey, now, `${now}-${Math.random()}`);
 
     // Set expiration
     pipeline.expire(redisKey, Math.ceil(windowMs / 1000));
 
-    // Get count
+    // Get count after adding
     pipeline.zcard(redisKey);
 
     // Get earliest timestamp for reset time calculation
     pipeline.zrange(redisKey, 0, 0, 'WITHSCORES');
 
     const results = await pipeline.exec();
-    const count = results[2][1];
-    const earliestEntry = results[3][1];
+    const countBeforeAdd = (results[1] && results[1][1] !== undefined) ? parseInt(results[1][1]) : 0;
+    const countAfterAdd = (results[3] && results[3][1] !== undefined) ? parseInt(results[3][1]) : 0;
+    const earliestEntry = results[4] && results[4][1];
 
-    if (count > maxRequests) {
+    // Check if this request exceeds the limit (after adding)
+    if (countBeforeAdd + 1 > maxRequests) {
       const resetTime = earliestEntry && earliestEntry.length > 0
         ? parseInt(earliestEntry[1]) + windowMs
         : now + windowMs;
@@ -163,7 +279,7 @@ async function checkRedisRateLimit(
 
     return {
       allowed: true,
-      remaining: maxRequests - count,
+      remaining: Math.max(0, maxRequests - countAfterAdd),
     };
   } catch (error) {
     console.error('Redis rate limiting error, falling back to memory:', error);
@@ -178,33 +294,51 @@ function checkMemoryRateLimit(
   maxRequests: number
 ): RateLimitResult {
   const windowStart = now - windowMs;
+  const memoryKey = `rate_limit:${key}`; // Use consistent key naming
 
-  // Get or create rate limit entry
-  let entry = rateLimitStore.get(key);
-  if (!entry || entry.resetTime < windowStart) {
+  // Get or create rate limit entry with sliding window
+  let entry = rateLimitStore.get(memoryKey);
+  if (!entry) {
     entry = {
       count: 0,
       resetTime: now + windowMs,
+      requests: [], // Array to track individual request timestamps
     };
-    rateLimitStore.set(key, entry);
+    rateLimitStore.set(memoryKey, entry);
   }
 
-  // Check if limit exceeded
-  if (entry.count >= maxRequests) {
+  // Remove expired requests from sliding window
+  if (entry.requests) {
+    entry.requests = entry.requests.filter((timestamp: number) => timestamp > windowStart);
+    entry.count = entry.requests.length;
+  }
+
+  // Add current request timestamp and increment count
+  if (!entry.requests) {
+    entry.requests = [];
+  }
+  entry.requests.push(now);
+  entry.count = entry.requests.length;
+  entry.resetTime = now + windowMs;
+  rateLimitStore.set(memoryKey, entry);
+
+  // Check if this request exceeds the limit
+  if (entry.count > maxRequests) {
+    // Calculate when the earliest request will expire
+    const earliestExpiry = entry.requests && entry.requests.length > 0
+      ? entry.requests[0] + windowMs
+      : now + windowMs;
+
     return {
       allowed: false,
-      retryAfter: Math.ceil((entry.resetTime - now) / 1000),
+      retryAfter: Math.ceil((earliestExpiry - now) / 1000),
       remaining: 0,
     };
   }
 
-  // Increment count
-  entry.count++;
-  rateLimitStore.set(key, entry);
-
   return {
     allowed: true,
-    remaining: maxRequests - entry.count,
+    remaining: Math.max(0, maxRequests - entry.count),
   };
 }
 
@@ -213,15 +347,18 @@ const defaultKeyGenerator = (req: NextApiRequest): string => {
   // Get IP address from various headers
   const forwarded = req.headers['x-forwarded-for'];
   const realIp = req.headers['x-real-ip'];
-  const ip = req.connection.remoteAddress;
+  const ip = req.socket?.remoteAddress;
 
   // Use the first IP in x-forwarded-for if available
   if (forwarded && typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
+    const ip = forwarded.split(',')[0].trim();
+    return ip || 'unknown';
   }
 
   // Fall back to other headers
-  return (realIp as string) || (ip as string) || 'unknown';
+  return (typeof realIp === 'string' ? realIp : null) ||
+         (typeof ip === 'string' ? ip : null) ||
+         'unknown';
 };
 
 // Specialized rate limiter for webhooks (more restrictive)
@@ -277,7 +414,13 @@ export const userRateLimit = async (
   const key = userId ? `user:${userId}` : defaultKeyGenerator(req);
   const now = Date.now();
 
-  // Try Redis first if available
+  // Try modern Redis first for production scalability
+  const modernRedis = await initializeModernRedis();
+  if (modernRedis) {
+    return checkModernRedisRateLimit(modernRedis, key, now, windowMs, maxRequests);
+  }
+
+  // Fallback to legacy Redis if available
   const redis = await initializeRedis();
   if (redis) {
     return checkRedisRateLimit(redis, key, now, windowMs, maxRequests);
@@ -297,17 +440,56 @@ export const getRateLimitStatus = async (
   remaining: number;
   resetTime: Date | null;
 }> => {
-  const redis = await initializeRedis();
+  // Try modern Redis first
+  try {
+    const redisKey = `rate_limit:${key}`;
+    const windowStart = Date.now() - windowMs;
 
+    // Clean up old entries first
+    await redisUtils.zremrangebyscore(redisKey, 0, windowStart);
+
+    const count = await redisUtils.zcard(redisKey);
+    const earliestEntry = await redisUtils.zrange(redisKey, 0, 0, 'WITHSCORES');
+
+    let resetTime = null;
+    if (earliestEntry && earliestEntry.length > 0) {
+      // Handle both Redis response formats: modern Redis returns objects with score, legacy returns string array
+      const timestamp = typeof earliestEntry[0] === 'object' && earliestEntry[0].score
+        ? parseInt(earliestEntry[0].score)
+        : parseInt(earliestEntry[1]);
+      resetTime = new Date(timestamp + windowMs);
+    }
+
+    return {
+      current: count,
+      max: 100, // Default max
+      remaining: Math.max(0, 100 - count),
+      resetTime,
+    };
+  } catch (error) {
+    console.error('Error getting modern Redis rate limit status:', error);
+  }
+
+  // Fallback to legacy Redis
+  const redis = await initializeRedis();
   if (redis) {
     try {
       const redisKey = `rate_limit:${key}`;
+      const windowStart = Date.now() - windowMs;
+
+      // Clean up old entries first
+      await redis.zremrangebyscore(redisKey, 0, windowStart);
+
       const count = await redis.zcard(redisKey);
       const earliestEntry = await redis.zrange(redisKey, 0, 0, 'WITHSCORES');
 
       let resetTime = null;
       if (earliestEntry && earliestEntry.length > 0) {
-        resetTime = new Date(parseInt(earliestEntry[1]) + windowMs);
+        // Legacy Redis returns string array [value, score]
+        const timestamp = parseInt(earliestEntry[1]);
+        if (!isNaN(timestamp)) {
+          resetTime = new Date(timestamp + windowMs);
+        }
       }
 
       return {
@@ -324,6 +506,19 @@ export const getRateLimitStatus = async (
   // Fallback to memory store
   const entry = rateLimitStore.get(`rate_limit:${key}`);
   if (entry) {
+    const windowStart = Date.now() - windowMs;
+
+    // Clean up expired entries
+    if (entry.resetTime < windowStart) {
+      rateLimitStore.delete(`rate_limit:${key}`);
+      return {
+        current: 0,
+        max: 100,
+        remaining: 100,
+        resetTime: null,
+      };
+    }
+
     return {
       current: entry.count,
       max: 100,
@@ -342,8 +537,15 @@ export const getRateLimitStatus = async (
 
 // Reset rate limit for a specific key (for testing or admin purposes)
 export const resetRateLimit = async (key: string): Promise<void> => {
-  const redis = await initializeRedis();
+  // Try modern Redis first
+  try {
+    await redisUtils.del(`rate_limit:${key}`);
+  } catch (error) {
+    console.error('Error resetting modern Redis rate limit:', error);
+  }
 
+  // Fallback to legacy Redis
+  const redis = await initializeRedis();
   if (redis) {
     try {
       await redis.del(`rate_limit:${key}`);
@@ -355,14 +557,23 @@ export const resetRateLimit = async (key: string): Promise<void> => {
   rateLimitStore.delete(`rate_limit:${key}`);
 };
 
-// Clean up Redis connection on shutdown
+// Clean up Redis connections on shutdown
 export const closeRateLimiter = async (): Promise<void> => {
+  // Import dynamically to avoid circular dependency
+  try {
+    const { closeRedisConnection } = await import('./redis-config');
+    await closeRedisConnection();
+  } catch (error) {
+    console.error('Error closing Redis connection:', error);
+  }
+
+  // Close legacy Redis client
   if (redisClient) {
     try {
       await redisClient.quit();
       redisClient = null;
     } catch (error) {
-      console.error('Error closing Redis client:', error);
+      console.error('Error closing legacy Redis client:', error);
     }
   }
 };

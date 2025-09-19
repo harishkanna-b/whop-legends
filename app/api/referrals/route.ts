@@ -78,7 +78,6 @@ export const POST = async (request: NextRequest) => {
   }
 
   try {
-  try {
     const body = await request.json()
     const { userId, action, ...data } = body
 

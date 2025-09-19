@@ -1,205 +1,147 @@
-import { createMocks } from 'node-mocks-http';
-import { validateWebhookRequest } from '@/lib/webhooks/verify-signature';
-import webhookHandler from '@/pages/api/webhooks/whop';
-import { WebhookManager } from '@/lib/webhooks/webhook-manager';
-import { supabase } from '@/lib/supabase-client';
-import { Database } from '@/types/database';
+import { POST } from '@/app/api/webhooks/route';
+import { makeWebhookValidator } from '@whop/api';
+import { referralManager } from '@/lib/referral-tracking';
+import { supabaseService } from '@/lib/supabase-client';
+import { ProgressTracker } from '@/lib/quest-system/progress-tracker';
 
-// Mock the database client
-jest.mock('@/lib/supabase-client', () => ({
-  supabase: {
-    from: jest.fn(),
-    rpc: jest.fn(),
-  },
-}));
+// Mock the dependencies
+jest.mock('@/lib/referral-tracking');
+jest.mock('@/lib/supabase-client');
+jest.mock('@/lib/quest-system/progress-tracker');
 
 // Mock environment variables
 process.env.WHOP_WEBHOOK_SECRET = 'test-secret';
 
-describe('Webhook Integration Tests', () => {
-  let webhookManager: WebhookManager;
+describe('Real Whop Webhook Integration Tests', () => {
+  let mockValidateWebhook: jest.Mock;
 
   beforeEach(() => {
-    webhookManager = new WebhookManager();
     jest.clearAllMocks();
+
+    // Mock the webhook validator
+    mockValidateWebhook = jest.fn();
+
+    // Mock referral manager
+    (referralManager.createReferral as jest.Mock).mockResolvedValue({
+      id: 'test-referral-id',
+      referrerId: 'referrer-123',
+      referredUserId: 'user-123',
+      status: 'completed' as const,
+      value: 100,
+      commission: 15,
+    });
+
+    // Mock supabase service
+    (supabaseService.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: null,
+        error: null,
+      }),
+      insert: jest.fn().mockResolvedValue({
+        data: { id: 'test-referral' },
+        error: null,
+      }),
+      update: jest.fn().mockResolvedValue({
+        data: { id: 'test-referral-updated' },
+        error: null,
+      }),
+    });
+
+    // Mock progress tracker
+    (ProgressTracker.bulkUpdateProgress as jest.Mock).mockResolvedValue(undefined);
   });
 
-  describe('Webhook Signature Verification', () => {
-    it('should validate correct webhook signature', () => {
-      const payload = {
-        event: 'referral.created',
+  describe('Real Whop payment.succeeded Event Processing', () => {
+    it('should process payment.succeeded webhook with real Whop payload structure', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
         data: {
-          id: 'test-referral-id',
-          userId: 'test-user-id',
-          amount: 100,
-        },
+          id: 'pay_123456789',
+          final_amount: 100,
+          amount_after_fees: 92,
+          currency: 'USD',
+          user_id: 'user_123',
+          member: {
+            user: {
+              id: 'user_123',
+              username: 'testuser',
+              email: 'test@example.com'
+            },
+            plan: {
+              id: 'plan_123',
+              title: 'Test Plan',
+              initialPrice: 100
+            }
+          }
+        }
       };
 
-      const signature = 'test-signature';
-      const timestamp = Date.now().toString();
-
-      const { req } = createMocks({
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
         method: 'POST',
         headers: {
-          'x-whop-signature': signature,
-          'x-whop-timestamp': timestamp,
+          'Content-Type': 'application/json',
         },
-        body: payload,
+        body: JSON.stringify(mockWebhookData),
       });
 
-      const validation = validateWebhookRequest(req, 'test-secret');
-      expect(validation.isValid).toBe(true);
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Verify the webhook was processed correctly
+      expect(referralManager.createReferral).toHaveBeenCalled();
+      expect(supabaseService.from).toHaveBeenCalledWith('referrals');
     });
 
-    it('should reject webhook without signature', () => {
-      const payload = {
-        event: 'referral.created',
-        data: { id: 'test-referral-id' },
-      };
-
-      const { req } = createMocks({
-        method: 'POST',
-        headers: {},
-        body: payload,
-      });
-
-      const validation = validateWebhookRequest(req, 'test-secret');
-      expect(validation.isValid).toBe(false);
-    });
-
-    it('should reject webhook with expired timestamp', () => {
-      const payload = {
-        event: 'referral.created',
-        data: { id: 'test-referral-id' },
-      };
-
-      const oldTimestamp = (Date.now() - 600000).toString(); // 10 minutes ago
-
-      const { req } = createMocks({
-        method: 'POST',
-        headers: {
-          'x-whop-signature': 'test-signature',
-          'x-whop-timestamp': oldTimestamp,
-        },
-        body: payload,
-      });
-
-      const validation = validateWebhookRequest(req, 'test-secret');
-      expect(validation.isValid).toBe(false);
-    });
-  });
-
-  describe('Webhook Handler Integration', () => {
-    it('should handle referral.created webhook successfully', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
+    it('should handle payment.succeeded without referrer', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
         data: {
-          id: 'ref-123',
-          userId: 'user-123',
-          referrerId: 'referrer-123',
-          amount: 50.0,
-          commission: 5.0,
-          status: 'pending',
-        },
+          id: 'pay_123456789',
+          final_amount: 100,
+          amount_after_fees: 92,
+          currency: 'USD',
+          user_id: 'user_456', // User with no referrer
+          member: {
+            user: {
+              id: 'user_456',
+              username: 'directuser',
+              email: 'direct@example.com'
+            },
+            plan: {
+              id: 'plan_123',
+              title: 'Test Plan',
+              initialPrice: 100
+            }
+          }
+        }
       };
 
-      const { req, res } = createMocks({
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
         method: 'POST',
         headers: {
-          'x-whop-signature': 'valid-signature',
-          'x-whop-timestamp': Date.now().toString(),
+          'Content-Type': 'application/json',
         },
-        body: payload,
+        body: JSON.stringify(mockWebhookData),
       });
 
-      // Mock successful processing
-      jest.spyOn(webhookManager, 'processWebhook').mockResolvedValue({
-        success: true,
-        eventId: 'webhook-test-id',
-        processedAt: new Date().toISOString(),
-      });
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
 
-      await webhookHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      const responseData = JSON.parse(res._getData());
-      expect(responseData.success).toBe(true);
-    });
-
-    it('should handle webhook processing errors gracefully', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
-        data: {
-          id: 'ref-123',
-          userId: 'invalid-user-id', // This will cause an error
-        },
-      };
-
-      const { req, res } = createMocks({
-        method: 'POST',
-        headers: {
-          'x-whop-signature': 'valid-signature',
-          'x-whop-timestamp': Date.now().toString(),
-        },
-        body: payload,
-      });
-
-      // Mock processing error
-      jest.spyOn(webhookManager, 'processWebhook').mockRejectedValue(
-        new Error('User not found')
-      );
-
-      await webhookHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(500);
-      const responseData = JSON.parse(res._getData());
-      expect(responseData.success).toBe(false);
-      expect(responseData.error).toBeDefined();
-    });
-
-    it('should reject invalid webhook events', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'invalid.event',
-        timestamp: Date.now(),
-        data: {},
-      };
-
-      const { req, res } = createMocks({
-        method: 'POST',
-        headers: {
-          'x-whop-signature': 'valid-signature',
-          'x-whop-timestamp': Date.now().toString(),
-        },
-        body: payload,
-      });
-
-      await webhookHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(400);
-      const responseData = JSON.parse(res._getData());
-      expect(responseData.success).toBe(false);
-      expect(responseData.error).toContain('Invalid event type');
-    });
-  });
-
-  describe('Referral Processing Integration', () => {
-    beforeEach(() => {
-      // Mock successful database operations
-      (supabase.from as jest.Mock).mockReturnValue({
+      // Mock no referrer found
+      (supabaseService.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: null,
-          error: null,
-        }),
-        insert: jest.fn().mockResolvedValue({
-          data: { id: 'test-referral' },
-          error: null,
+          error: { code: 'PGRST116' }, // Not found error
         }),
         update: jest.fn().mockResolvedValue({
           data: { id: 'test-referral-updated' },
@@ -207,211 +149,399 @@ describe('Webhook Integration Tests', () => {
         }),
       });
 
-      (supabase.rpc as jest.Mock).mockResolvedValue({
-        data: 100,
-        error: null,
-      });
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Should still process direct payment
+      expect(supabaseService.from).toHaveBeenCalledWith('users');
     });
 
-    it('should process referral.created event and create user profile', async () => {
-      const eventData = {
-        id: 'ref-123',
-        userId: 'user-123',
-        referrerId: 'referrer-123',
-        amount: 50.0,
-        commission: 5.0,
-        status: 'pending',
+    it('should handle payment.succeeded with existing pending referral', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
+        data: {
+          id: 'pay_123456789',
+          final_amount: 50,
+          amount_after_fees: 46,
+          currency: 'USD',
+          user_id: 'user_789',
+          member: {
+            user: {
+              id: 'user_789',
+              username: 'referreduser',
+              email: 'referred@example.com'
+            },
+            plan: {
+              id: 'plan_456',
+              title: 'Test Plan 2',
+              initialPrice: 50
+            }
+          }
+        }
       };
 
-      const result = await webhookManager.processWebhook({
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
-        data: eventData,
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
       });
 
-      expect(result.success).toBe(true);
-      expect(supabase.from).toHaveBeenCalledWith('users');
-      expect(supabase.from).toHaveBeenCalledWith('referrals');
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      // Mock existing pending referral
+      (supabaseService.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValueOnce({
+          data: null,
+          error: { code: 'PGRST116' }, // No completed referral
+        }).mockResolvedValueOnce({
+          data: {
+            id: 'pending-ref-123',
+            referrer_id: 'referrer-456',
+            referred_user_id: 'user_789',
+            status: 'pending'
+          },
+          error: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          data: { id: 'completed-ref-123' },
+          error: null,
+        }),
+      });
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Should complete the pending referral
+      expect(supabaseService.from).toHaveBeenCalledWith('referrals');
+      expect(supabaseService.from).toHaveBeenCalledWith('users');
     });
 
-    it('should process referral.completed event and update user XP', async () => {
-      const eventData = {
-        id: 'ref-123',
-        userId: 'user-123',
-        amount: 50.0,
-        commission: 5.0,
-        status: 'completed',
+    it('should handle invalid payment amounts gracefully', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
+        data: {
+          id: 'pay_invalid',
+          final_amount: -100, // Invalid negative amount
+          amount_after_fees: -92,
+          currency: 'USD',
+          user_id: 'user_invalid',
+          member: {
+            user: {
+              id: 'user_invalid',
+              username: 'invaliduser',
+              email: 'invalid@example.com'
+            },
+            plan: {
+              id: 'plan_invalid',
+              title: 'Invalid Plan',
+              initialPrice: -100
+            }
+          }
+        }
       };
 
-      const result = await webhookManager.processWebhook({
-        id: 'webhook-test-id',
-        event: 'referral.completed',
-        timestamp: Date.now(),
-        data: eventData,
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
       });
 
-      expect(result.success).toBe(true);
-      expect(supabase.rpc).toHaveBeenCalledWith('calculate_user_level', {
-        p_user_id: 'user-123',
-      });
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200); // Still returns 200 to avoid retries
+
+      // Should not process invalid payment
+      expect(referralManager.createReferral).not.toHaveBeenCalled();
     });
 
-    it('should process referral.cancelled event and update status', async () => {
-      const eventData = {
-        id: 'ref-123',
-        userId: 'user-123',
-        status: 'cancelled',
+    it('should handle missing user_id in payment webhook', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
+        data: {
+          id: 'pay_no_user',
+          final_amount: 100,
+          amount_after_fees: 92,
+          currency: 'USD',
+          user_id: null, // Missing user_id
+          member: {
+            user: {
+              id: null,
+              username: 'unknown',
+              email: 'unknown@example.com'
+            },
+            plan: {
+              id: 'plan_no_user',
+              title: 'No User Plan',
+              initialPrice: 100
+            }
+          }
+        }
       };
 
-      const result = await webhookManager.processWebhook({
-        id: 'webhook-test-id',
-        event: 'referral.cancelled',
-        timestamp: Date.now(),
-        data: eventData,
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
       });
 
-      expect(result.success).toBe(true);
-      expect(supabase.from).toHaveBeenCalledWith('referrals');
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Should not process payment without user_id
+      expect(referralManager.createReferral).not.toHaveBeenCalled();
+      expect(supabaseService.from).not.toHaveBeenCalled();
     });
   });
 
-  describe('Rate Limiting Integration', () => {
-    it('should apply rate limiting to webhook requests', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
-        data: { id: 'ref-123' },
+  describe('Database Error Handling', () => {
+    it('should handle database connection errors gracefully', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
+        data: {
+          id: 'pay_db_error',
+          final_amount: 100,
+          amount_after_fees: 92,
+          currency: 'USD',
+          user_id: 'user_db_error',
+          member: {
+            user: {
+              id: 'user_db_error',
+              username: 'dberroruser',
+              email: 'dberror@example.com'
+            },
+            plan: {
+              id: 'plan_db_error',
+              title: 'DB Error Plan',
+              initialPrice: 100
+            }
+          }
+        }
       };
 
-      // Mock rate limiting
-      jest.spyOn(webhookManager, 'processWebhook').mockResolvedValue({
-        success: true,
-        eventId: 'webhook-test-id',
-        processedAt: new Date().toISOString(),
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
       });
 
-      // Process multiple requests quickly
-      const requests = Array(10).fill(null).map(() =>
-        webhookManager.processWebhook(payload)
-      );
-
-      const results = await Promise.all(requests);
-
-      // All requests should succeed (rate limiting is handled at the middleware level)
-      expect(results.every(result => result.success)).toBe(true);
-    });
-  });
-
-  describe('Error Handling and Retry Logic', () => {
-    it('should handle database connection errors', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
-        data: { id: 'ref-123' },
-      };
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
 
       // Mock database error
-      (supabase.from as jest.Mock).mockReturnValue({
+      (supabaseService.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockRejectedValue(new Error('Database connection failed')),
       });
 
-      const result = await webhookManager.processWebhook(payload);
+      const response = await POST(mockRequest);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Database connection failed');
-    });
+      expect(response.status).toBe(200); // Still returns 200 to avoid webhook retries
 
-    it('should handle validation errors gracefully', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
-        data: {
-          // Missing required fields
-          id: '',
-          userId: '',
-        },
-      };
-
-      const result = await webhookManager.processWebhook(payload);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Validation failed');
+      // Error should be logged but not cause webhook failure
+      expect(console.error).toHaveBeenCalled();
     });
   });
 
-  describe('Security and Data Validation', () => {
-    it('should sanitize input data to prevent injection attacks', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
+  describe('Quest Progress Integration', () => {
+    it('should update quest progress for referrer after successful payment', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
         data: {
-          id: 'ref-123',
-          userId: 'user-123<script>alert("xss")</script>',
-          amount: 50.0,
-          status: 'pending',
-        },
+          id: 'pay_quest_update',
+          final_amount: 200,
+          amount_after_fees: 184,
+          currency: 'USD',
+          user_id: 'user_quest',
+          member: {
+            user: {
+              id: 'user_quest',
+              username: 'questuser',
+              email: 'quest@example.com'
+            },
+            plan: {
+              id: 'plan_quest',
+              title: 'Quest Plan',
+              initialPrice: 200
+            }
+          }
+        }
       };
 
-      const result = await webhookManager.processWebhook(payload);
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
+      });
 
-      expect(result.success).toBe(true);
-      // The script tag should be sanitized or escaped
-      expect(supabase.from).toHaveBeenCalledWith('referrals');
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      // Mock referrer found
+      (supabaseService.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            referrer_id: 'referrer_quest'
+          },
+          error: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          data: { id: 'quest-referral' },
+          error: null,
+        }),
+      });
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Should update quest progress
+      expect(ProgressTracker.bulkUpdateProgress).toHaveBeenCalledWith(
+        'referrer_quest',
+        expect.any(Array)
+      );
     });
+  });
 
-    it('should validate numeric fields', async () => {
-      const payload = {
-        id: 'webhook-test-id',
-        event: 'referral.created',
-        timestamp: Date.now(),
+  describe('Commission Calculation', () => {
+    it('should calculate commission correctly based on payment amount', async () => {
+      const mockWebhookData = {
+        action: 'payment.succeeded',
         data: {
-          id: 'ref-123',
-          userId: 'user-123',
-          amount: 'invalid-amount', // Should be a number
-          status: 'pending',
-        },
+          id: 'pay_commission_test',
+          final_amount: 1000, // $1000 payment
+          amount_after_fees: 920,
+          currency: 'USD',
+          user_id: 'user_commission',
+          member: {
+            user: {
+              id: 'user_commission',
+              username: 'commissionuser',
+              email: 'commission@example.com'
+            },
+            plan: {
+              id: 'plan_commission',
+              title: 'Commission Plan',
+              initialPrice: 1000
+            }
+          }
+        }
       };
 
-      const result = await webhookManager.processWebhook(payload);
+      const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockWebhookData),
+      });
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid amount');
+      // Mock the webhook validator to return our test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue(() => Promise.resolve(mockWebhookData));
+
+      const response = await POST(mockRequest);
+
+      expect(response.status).toBe(200);
+
+      // Should calculate 15% commission ($150)
+      expect(referralManager.createReferral).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        1000, // Original payment amount
+        expect.any(String),
+        expect.objectContaining({
+          payment_id: 'pay_commission_test',
+          commission_rate: 0.15
+        })
+      );
     });
   });
 
   describe('Performance and Scalability', () => {
-    it('should handle concurrent webhook processing', async () => {
-      const payloads = Array(50).fill(null).map((_, index) => ({
-        id: `webhook-test-id-${index}`,
-        event: 'referral.created' as const,
-        timestamp: Date.now(),
-        data: {
-          id: `ref-${index}`,
-          userId: `user-${index}`,
-          amount: 50.0,
-          status: 'pending',
-        },
-      }));
+    it('should handle concurrent payment webhooks efficiently', async () => {
+      const concurrentRequests = 20;
+      const requests = [];
 
-      jest.spyOn(webhookManager, 'processWebhook').mockResolvedValue({
-        success: true,
-        eventId: 'test-id',
-        processedAt: new Date().toISOString(),
+      for (let i = 0; i < concurrentRequests; i++) {
+        const mockWebhookData = {
+          action: 'payment.succeeded',
+          data: {
+            id: `pay_concurrent_${i}`,
+            final_amount: 100 + i,
+            amount_after_fees: 92 + i,
+            currency: 'USD',
+            user_id: `user_concurrent_${i}`,
+            member: {
+              user: {
+                id: `user_concurrent_${i}`,
+                username: `concurrentuser${i}`,
+                email: `concurrent${i}@example.com`
+              },
+              plan: {
+                id: `plan_concurrent_${i}`,
+                title: `Concurrent Plan ${i}`,
+                initialPrice: 100 + i
+              }
+            }
+          }
+        };
+
+        const mockRequest = new Request('https://localhost:3000/api/webhooks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mockWebhookData),
+        });
+
+        requests.push(mockRequest);
+      }
+
+      // Mock the webhook validator to return test data
+      const { makeWebhookValidator } = await import('@whop/api');
+      (makeWebhookValidator as jest.Mock).mockReturnValue((req: Request) => {
+        return Promise.resolve(JSON.parse(req.body as string));
       });
 
       const startTime = Date.now();
-      const results = await Promise.all(payloads.map(payload => webhookManager.processWebhook(payload)));
+      const responses = await Promise.all(requests.map(request => POST(request)));
       const endTime = Date.now();
 
-      expect(results.every(result => result.success)).toBe(true);
-      expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
+      expect(responses.every(response => response.status === 200)).toBe(true);
+      expect(endTime - startTime).toBeLessThan(3000); // Should complete within 3 seconds
+
+      // All requests should have been processed
+      expect(referralManager.createReferral).toHaveBeenCalledTimes(concurrentRequests);
     });
   });
 });

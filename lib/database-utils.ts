@@ -429,3 +429,123 @@ export const getPaginatedData = async (
     totalPages: Math.ceil((count || 0) / pageSize)
   };
 };
+
+// Leaderboard operations
+export const getLeaderboardSnapshot = async (leaderboardId: string) => {
+  const { data, error } = await supabase
+    .from('leaderboard_snapshots')
+    .select('*')
+    .eq('leaderboard_id', leaderboardId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+    console.error('Error fetching leaderboard snapshot:', error);
+    return null;
+  }
+
+  return data;
+};
+
+export const createLeaderboardSnapshot = async (snapshotData: any) => {
+  const { data, error } = await supabase
+    .from('leaderboard_snapshots')
+    .insert(snapshotData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating leaderboard snapshot:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+export const getUserRankingHistory = async (userId: string, leaderboardId: string, limit = 10) => {
+  const { data, error } = await supabase
+    .from('user_ranking_history')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('leaderboard_id', leaderboardId)
+    .order('snapshot_date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching user ranking history:', error);
+    return [];
+  }
+
+  return data;
+};
+
+export const createUserRankingEntry = async (entryData: any) => {
+  const { data, error } = await supabase
+    .from('user_ranking_history')
+    .insert(entryData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating user ranking entry:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+// Analytics cache operations
+export const getAnalyticsCache = async (cacheKey: string) => {
+  const { data, error } = await supabase
+    .from('analytics_cache')
+    .select('*')
+    .eq('cache_key', cacheKey)
+    .gte('expires_at', new Date().toISOString())
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+    console.error('Error fetching analytics cache:', error);
+    return null;
+  }
+
+  // Return null if cache is expired or not found
+  if (!data || new Date(data.expires_at) < new Date()) {
+    return null;
+  }
+
+  return data;
+};
+
+export const setAnalyticsCache = async (cacheKey: string, cacheData: any, ttlSeconds = 3600) => {
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from('analytics_cache')
+    .upsert({
+      cache_key: cacheKey,
+      cache_data: cacheData,
+      expires_at: expiresAt,
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error setting analytics cache:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+export const cleanupExpiredCache = async () => {
+  const { data, error } = await supabase.rpc('cleanup_expired_cache');
+
+  if (error) {
+    console.error('Error cleaning up expired cache:', error);
+    return 0;
+  }
+
+  return data || 0;
+};
