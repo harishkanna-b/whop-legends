@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "devCommand": "pnpm dev",
+  "outputDirectory": null,
+  "routes": [
+    {
+      "src": "/experiences/(.*)",
+      "dest": "/experiences/$1"
+    },
+    {
+      "src": "/discover",
+      "dest": "/discover"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "WHOP_WEBHOOK_SECRET": "@whop_webhook_secret",
+    "WHOP_API_KEY": "@whop_api_key",
+    "NEXT_PUBLIC_WHOP_APP_ID": "@whop_app_id",
+    "REDIS_URL": "@redis_url"
+  }
+}
