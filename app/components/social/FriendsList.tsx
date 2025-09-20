@@ -145,15 +145,15 @@ export default function FriendsList({ userId }: FriendsListProps) {
               <div key={friend.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {friend.friend.username?.[0] || '?'}
+                    {friend.friend?.username?.[0] || '?'}
                   </div>
                   <div>
-                    <h3 className="font-semibold">{friend.friend.username || 'Unknown User'}</h3>
+                    <h3 className="font-semibold">{friend.friend?.username || 'Unknown User'}</h3>
                     <p className="text-sm text-gray-500">
-                      {friend.friend.socialProfile?.bio || 'No bio available'}
+                      {friend.friend?.socialProfile?.bio || 'No bio available'}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Friends since {new Date(friend.requestedAt || friend.createdAt).toLocaleDateString()}
+                      Friends since {new Date(friend.requestedAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -187,10 +187,10 @@ export default function FriendsList({ userId }: FriendsListProps) {
               <div key={request.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {request.requester.username?.[0] || '?'}
+                    {request.requester?.username?.[0] || '?'}
                   </div>
                   <div>
-                    <h3 className="font-semibold">{request.requester.username || 'Unknown User'}</h3>
+                    <h3 className="font-semibold">{request.requester?.username || 'Unknown User'}</h3>
                     <p className="text-sm text-gray-500">{request.message || 'No message'}</p>
                     <p className="text-xs text-gray-400">
                       Requested {new Date(request.requestedAt).toLocaleDateString()}

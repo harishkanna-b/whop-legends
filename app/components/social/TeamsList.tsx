@@ -194,7 +194,7 @@ export default function TeamsList({ userId }: TeamsListProps) {
                     <h3 className="font-semibold">{team.name}</h3>
                     <p className="text-sm text-gray-500">{team.description}</p>
                     <p className="text-xs text-gray-400">
-                      {team.members.length}/{team.maxMembers} members • Led by {team.leader.username}
+                      {team.members?.length || 0}/{team.maxMembers} members • Led by {team.leader?.username || 'Unknown'}
                     </p>
                   </div>
                 </div>
@@ -239,7 +239,7 @@ export default function TeamsList({ userId }: TeamsListProps) {
                     <h3 className="font-semibold">{team.name}</h3>
                     <p className="text-sm text-gray-500">{team.description}</p>
                     <p className="text-xs text-gray-400">
-                      {team.members.length}/{team.maxMembers} members • {team.isPrivate ? 'Private' : 'Public'}
+                      {team.members?.length || 0}/{team.maxMembers} members • {team.isPrivate ? 'Private' : 'Public'}
                     </p>
                   </div>
                 </div>
@@ -273,13 +273,13 @@ export default function TeamsList({ userId }: TeamsListProps) {
               <div key={invite.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    {invite.team.name[0]}
+                    {invite.team?.name?.[0] || 'T'}
                   </div>
                   <div>
-                    <h3 className="font-semibold">{invite.team.name}</h3>
+                    <h3 className="font-semibold">{invite.team?.name || 'Unknown Team'}</h3>
                     <p className="text-sm text-gray-500">{invite.message || 'No message'}</p>
                     <p className="text-xs text-gray-400">
-                      Invited by {invite.inviter.username} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                      Invited by {invite.inviter?.username || 'Unknown'} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

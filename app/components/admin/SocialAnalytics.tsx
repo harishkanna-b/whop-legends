@@ -147,9 +147,9 @@ export default function SocialAnalytics() {
           <div className="space-y-4">
             <div>
               <div className="text-2xl font-bold text-purple-600">
-                {formatNumber(Math.round(stats.totalFriends / stats.totalUsers * 100))}
+                {stats.totalTeams > 0 ? formatNumber(Math.round(stats.totalTeamMembers / stats.totalTeams)) : 0}
               </div>
-              <div className="text-sm text-gray-600">Friends per 100 Users</div>
+              <div className="text-sm text-gray-600">Avg Team Size</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-yellow-600">
@@ -165,9 +165,9 @@ export default function SocialAnalytics() {
           <div className="space-y-4">
             <div>
               <div className="text-2xl font-bold text-indigo-600">
-                {(stats.totalTeamMembers / stats.totalUsers * 100).toFixed(1)}%
+                {stats.totalTeams > 0 ? ((stats.totalTeamMembers / stats.totalTeams) * 100).toFixed(1) : '0.0'}%
               </div>
-              <div className="text-sm text-gray-600">Users in Teams</div>
+              <div className="text-sm text-gray-600">Team Participation Rate</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { LevelingManager } from '@/lib/leveling'
+import { CharacterClassManager } from '@/lib/character-classes'
 
 interface LevelProgressionProps {
   userId: string
@@ -38,25 +39,34 @@ export default function LevelProgression({ userId }: LevelProgressionProps) {
     try {
       setLoading(true)
 
-      // Load user progression
+      // Load user progression and character class
       const userProgress = await LevelingManager.getUserProgression(userId)
+      const userClass = await CharacterClassManager.getUserClass(userId)
+      const characterClass = userClass ? CharacterClassManager.getClassById(userClass.classId) : null
 
       // Calculate XP requirements
-      const xpToNextLevel = LevelingManager.calculateXPRequired(userProgress.level + 1, userProgress.characterClass)
-      const xpForCurrentLevel = LevelingManager.calculateXPRequired(userProgress.level, userProgress.characterClass)
+      const xpToNextLevel = LevelingManager.calculateXPRequired(userProgress.currentLevel + 1, characterClass || undefined)
+      const xpForCurrentLevel = LevelingManager.calculateXPRequired(userProgress.currentLevel, characterClass || undefined)
       const currentLevelXP = userProgress.totalXP - xpForCurrentLevel
 
       setProgress({
-        level: userProgress.level,
+        level: userProgress.currentLevel,
         totalXP: userProgress.totalXP,
         xpToNextLevel,
         currentLevelXP,
-        characterClass: userProgress.characterClass
+        characterClass
       })
 
       // Load XP history
       const history = await LevelingManager.getXPHistory(userId, 20)
-      setXpHistory(history)
+      setXpHistory(history.map(event => ({
+        id: event.id,
+        type: event.type,
+        amount: event.amount,
+        description: event.description,
+        timestamp: event.createdAt,
+        metadata: event.metadata
+      })))
     } catch (error) {
       console.error('Error loading progression data:', error)
     } finally {

@@ -628,7 +628,7 @@ export class AchievementManager {
     try {
       // Update user's XP (implement based on your leveling system)
       const { LevelingManager } = await import('./leveling')
-      await LevelingManager.addXP(userId, amount, 'achievement_unlock')
+      await LevelingManager.addXP(userId, amount, 'achievement', 'Achievement unlocked')
     } catch (error) {
       console.error('Error granting XP:', error)
     }

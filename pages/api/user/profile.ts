@@ -9,9 +9,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     switch (method) {
       case 'GET':
-        return await handleGet(req, res, userId);
+        return await handleGet(req, res, userId || '');
       case 'PUT':
-        return await handlePut(req, res, userId);
+        return await handlePut(req, res, userId || '');
       default:
         res.setHeader('Allow', ['GET', 'PUT']);
         return res.status(405).json({ error: `Method ${method} Not Allowed` });
@@ -61,7 +61,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, userId: stri
     const { username, avatarUrl, preferences } = req.body;
 
     // Validate username if provided
-    if (username && !this.isValidUsername(username)) {
+    if (username && !isValidUsername(username)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid username. Username must be 3-20 characters and contain only letters, numbers, and underscores',
@@ -69,7 +69,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, userId: stri
     }
 
     // Validate avatar URL if provided
-    if (avatarUrl && !this.isValidUrl(avatarUrl)) {
+    if (avatarUrl && !isValidUrl(avatarUrl)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid avatar URL',
@@ -77,7 +77,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, userId: stri
     }
 
     // Validate preferences if provided
-    if (preferences && !this.isValidPreferences(preferences)) {
+    if (preferences && !isValidPreferences(preferences)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid preferences format',

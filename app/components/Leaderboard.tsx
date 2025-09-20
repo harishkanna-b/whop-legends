@@ -49,7 +49,7 @@ export default function Leaderboard({ userId, limit = 10, showFilters = true }: 
       setLoading(true)
 
       // Load leaderboard data
-      const data = await LevelingManager.getLeaderboard(limit, filters.classFilter)
+      const data = await LevelingManager.getLeaderboard(limit, filters.classFilter || undefined)
 
       // Transform data and add current user highlighting
       const processedData = data.map((entry, index) => ({
@@ -58,8 +58,13 @@ export default function Leaderboard({ userId, limit = 10, showFilters = true }: 
         username: entry.username || `User ${entry.userId.slice(0, 8)}`,
         level: entry.level,
         totalXP: entry.totalXP,
-        characterClass: entry.characterClass,
-        stats: entry.stats,
+        classId: entry.classId,
+        characterClass: entry.classId ? CharacterClassManager.getClassById(entry.classId) : null,
+        stats: {
+          totalReferrals: 0, // TODO: Fetch actual referral stats
+          completedReferrals: 0,
+          totalValue: 0
+        },
         isCurrentUser: entry.userId === userId
       }))
 

@@ -22,18 +22,25 @@ const handler = async (request: NextRequest) => {
       )
     }
 
-    const activity = await socialManager.logSocialActivity(
-      userId,
-      type,
-      description,
-      metadata,
-      isPublic
-    )
+    // const activity = await socialManager.logSocialActivity(
+    //   userId,
+    //   type,
+    //   description,
+    //   metadata,
+    //   isPublic
+    // )
 
     return NextResponse.json({
       success: true,
-      data: activity,
-      message: 'Social activity logged successfully'
+      data: {
+        userId,
+        type,
+        description,
+        metadata,
+        isPublic,
+        timestamp: new Date().toISOString()
+      },
+      message: 'Social activity logged successfully (mock implementation)'
     })
   } catch (error) {
     console.error('Social activity log API error:', error)

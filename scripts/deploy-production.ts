@@ -106,9 +106,7 @@ class ProductionDeployer {
     console.log('⚡ Optimizing for production...')
 
     // Set production-specific optimizations
-    process.env.NODE_ENV = 'production'
-    process.env.NEXT_TELEMETRY_DISABLED = '1'
-    process.env.NEXT_PRIVATE_TARGET = 'server'
+    process.env = { ...process.env, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', NEXT_PRIVATE_TARGET: 'server' }
 
     // Optimize rate limiting for production
     config.update({

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ReferralManager } from '@/lib/referral-tracking'
+import { referralManager } from '@/lib/referral-tracking'
 
 interface ReferralTrackingProps {
   userId: string
@@ -10,13 +10,16 @@ interface ReferralTrackingProps {
 
 interface Referral {
   id: string
+  referrerId: string
   referredUserId: string
   referredUsername: string
-  status: 'pending' | 'completed' | 'expired'
+  status: 'pending' | 'completed' | 'expired' | 'cancelled'
   value: number
   commission: number
+  commissionRate: number
   createdAt: string
   completedAt?: string
+  expiresAt?: string
   source: string
   metadata?: {
     product?: string
@@ -56,8 +59,9 @@ interface Campaign {
   isActive: boolean
   referralCode: string
   createdAt: string
-  referrals: number
-  totalValue: number
+  expiresAt?: string
+  maxReferrals?: number
+  currentValue: number
 }
 
 export default function ReferralTracking({ userId, compact = false }: ReferralTrackingProps) {
@@ -77,15 +81,15 @@ export default function ReferralTracking({ userId, compact = false }: ReferralTr
       setLoading(true)
 
       // Load referrals with timeframe filter
-      const referralsData = await ReferralManager.getUserReferrals(userId, selectedTimeframe)
+      const referralsData = await referralManager.getUserReferrals(userId, selectedTimeframe)
       setReferrals(referralsData)
 
       // Load referral statistics
-      const statsData = await ReferralManager.getReferralStats(userId, selectedTimeframe)
+      const statsData = await referralManager.getReferralStats(userId, selectedTimeframe)
       setStats(statsData)
 
       // Load user campaigns
-      const campaignsData = await ReferralManager.getUserCampaigns(userId)
+      const campaignsData = await referralManager.getUserCampaigns(userId)
       setCampaigns(campaignsData)
     } catch (error) {
       console.error('Error loading referral data:', error)
@@ -114,7 +118,7 @@ export default function ReferralTracking({ userId, compact = false }: ReferralTr
 
   const generateReferralLink = async (campaignId?: string) => {
     try {
-      const link = await ReferralManager.generateReferralLink(userId, campaignId)
+      const link = await referralManager.generateReferralLink(userId, campaignId)
       // Copy to clipboard
       navigator.clipboard.writeText(link)
       alert('Referral link copied to clipboard!')
@@ -419,13 +423,15 @@ export default function ReferralTracking({ userId, compact = false }: ReferralTr
                           <span className="font-medium">{campaign.commissionRate}%</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Referrals:</span>
-                          <span className="font-medium">{campaign.referrals}</span>
+                          <span className="text-gray-600">Current Value:</span>
+                          <span className="font-medium">${campaign.currentValue.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Value:</span>
-                          <span className="font-medium">${campaign.totalValue.toLocaleString()}</span>
-                        </div>
+                        {campaign.maxReferrals && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Max Referrals:</span>
+                            <span className="font-medium">{campaign.maxReferrals}</span>
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => generateReferralLink(campaign.id)}

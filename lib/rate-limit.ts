@@ -45,7 +45,7 @@ try {
 import { initializeRedis as initializeModernRedis } from './redis-config';
 import { redisUtils } from './redis-config';
 
-interface RateLimitResult {
+export interface RateLimitResult {
   allowed: boolean;
   retryAfter?: number;
   remaining: number;

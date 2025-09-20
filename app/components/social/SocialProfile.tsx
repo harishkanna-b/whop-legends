@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { SocialProfile, SocialActivity } from '@/lib/social'
+import type { SocialProfile, SocialActivity } from '@/lib/social'
 
 interface SocialProfileProps {
   userId: string

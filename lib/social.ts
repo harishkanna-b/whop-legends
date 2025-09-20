@@ -8,6 +8,14 @@ export interface Friend {
   requestedAt: string
   respondedAt?: string
   metadata?: any
+  friend?: {
+    id: string
+    username: string
+    avatar?: string
+    socialProfile?: {
+      bio?: string
+    }
+  }
 }
 
 export interface FriendRequest {
@@ -19,6 +27,16 @@ export interface FriendRequest {
   requestedAt: string
   respondedAt?: string
   metadata?: any
+  requester?: {
+    id: string
+    username: string
+    avatar?: string
+  }
+  recipient?: {
+    id: string
+    username: string
+    avatar?: string
+  }
 }
 
 export interface Team {
@@ -35,6 +53,12 @@ export interface Team {
   stats: TeamStats
   createdAt: string
   updatedAt: string
+  members?: TeamMember[]
+  leader?: {
+    id: string
+    username: string
+    avatar?: string
+  }
 }
 
 export interface TeamSettings {
@@ -113,6 +137,10 @@ export interface SocialStats {
   totalValueGenerated: number
   socialAchievements: number
   rank: number
+  pendingFriendRequests: number
+  pendingTeamInvites: number
+  totalActivity: number
+  achievementsCount: number
 }
 
 export interface SocialAchievement {
@@ -135,6 +163,17 @@ export interface TeamInvite {
   invitedAt: string
   expiresAt: string
   respondedAt?: string
+  team?: {
+    id: string
+    name: string
+    description: string
+    avatar?: string
+  }
+  inviter?: {
+    id: string
+    username: string
+    avatar?: string
+  }
 }
 
 export interface SocialActivity {
@@ -282,10 +321,14 @@ export class SocialManager {
   async getFriendRequests(userId: string, type: 'sent' | 'received' = 'received'): Promise<FriendRequest[]> {
     try {
       const column = type === 'sent' ? 'requester_id' : 'recipient_id'
+      const userColumn = type === 'sent' ? 'recipient' : 'requester'
 
       const { data, error } = await supabase
         .from('friend_requests')
-        .select('*')
+        .select(`
+          *,
+          ${userColumn}:users!friend_requests_${userColumn}_id_fkey(*)
+        `)
         .eq(column, userId)
         .eq('status', 'pending')
         .order('requested_at', { ascending: false })
@@ -501,7 +544,11 @@ export class SocialManager {
 
   async getTeams(userId: string, type: 'member' | 'all' = 'member'): Promise<Team[]> {
     try {
-      let query = supabase.from('teams').select('*')
+      let query = supabase.from('teams').select(`
+        *,
+        leader:users!teams_leader_id_fkey(*),
+        members:team_members(*, user:users!team_members_user_id_fkey(*))
+      `)
 
       if (type === 'member') {
         const { data: memberTeams } = await supabase
@@ -657,7 +704,7 @@ export class SocialManager {
   // Social Stats and Analytics
   async getSocialStats(userId: string): Promise<SocialStats> {
     try {
-      const [friendsCount, teamsCount, referrals] = await Promise.all([
+      const [friendsCount, teamsCount, referrals, pendingRequests, pendingTeamInvites] = await Promise.all([
         supabase
           .from('friends')
           .select('*', { count: 'exact', head: true })
@@ -672,10 +719,22 @@ export class SocialManager {
           .from('referrals')
           .select('value')
           .eq('referrer_id', userId)
-          .eq('status', 'completed')
+          .eq('status', 'completed'),
+        supabase
+          .from('friend_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('recipient_id', userId)
+          .eq('status', 'pending'),
+        supabase
+          .from('team_invites')
+          .select('*', { count: 'exact', head: true })
+          .eq('invitee_id', userId)
+          .eq('status', 'pending')
       ])
 
       const totalValue = referrals.data?.reduce((sum, r) => sum + (r.value || 0), 0) || 0
+
+      const totalActivity = (friendsCount.count || 0) + (teamsCount.count || 0) + (referrals.count || 0) + 0 // socialAchievements
 
       return {
         friendsCount: friendsCount.count || 0,
@@ -684,7 +743,11 @@ export class SocialManager {
         referralsReceived: 0, // This would need separate calculation
         totalValueGenerated: totalValue,
         socialAchievements: 0, // This would need achievement system integration
-        rank: 0 // This would need ranking calculation
+        rank: 0, // This would need ranking calculation
+        pendingFriendRequests: pendingRequests.count || 0,
+        pendingTeamInvites: pendingTeamInvites.count || 0,
+        totalActivity,
+        achievementsCount: 0 // This would need achievement system integration
       }
     } catch (error) {
       console.error('Error getting social stats:', error)
@@ -695,7 +758,11 @@ export class SocialManager {
         referralsReceived: 0,
         totalValueGenerated: 0,
         socialAchievements: 0,
-        rank: 0
+        rank: 0,
+        pendingFriendRequests: 0,
+        pendingTeamInvites: 0,
+        totalActivity: 0,
+        achievementsCount: 0
       }
     }
   }
@@ -729,7 +796,15 @@ export class SocialManager {
       status: data.status,
       requestedAt: data.requested_at,
       respondedAt: data.responded_at,
-      metadata: data.metadata
+      metadata: data.metadata,
+      friend: data.friend ? {
+        id: data.friend.id,
+        username: data.friend.username,
+        avatar: data.friend.avatar,
+        socialProfile: data.friend.social_profile ? {
+          bio: data.friend.social_profile.bio
+        } : undefined
+      } : undefined
     }
   }
 
@@ -742,7 +817,17 @@ export class SocialManager {
       message: data.message,
       requestedAt: data.requested_at,
       respondedAt: data.responded_at,
-      metadata: data.metadata
+      metadata: data.metadata,
+      requester: data.requester ? {
+        id: data.requester.id,
+        username: data.requester.username,
+        avatar: data.requester.avatar
+      } : undefined,
+      recipient: data.recipient ? {
+        id: data.recipient.id,
+        username: data.recipient.username,
+        avatar: data.recipient.avatar
+      } : undefined
     }
   }
 
@@ -760,7 +845,13 @@ export class SocialManager {
       settings: data.settings,
       stats: data.stats,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      leader: data.leader ? {
+        id: data.leader.id,
+        username: data.leader.username,
+        avatar: data.leader.avatar
+      } : undefined,
+      members: data.members?.map((member: any) => this.mapTeamMember(member)) || []
     }
   }
 

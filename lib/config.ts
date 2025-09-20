@@ -45,7 +45,7 @@ export interface AppConfig {
 }
 
 class Config {
-  private static instance: Config
+  private static instance: Config | undefined
   private config: AppConfig
 
   private constructor() {

@@ -6,7 +6,7 @@ export interface RateLimitConfig {
   type: 'api' | 'webhook' | 'auth' | 'custom'
   windowMs?: number
   maxRequests?: number
-  keyGenerator?: (req: NextRequest) => string
+  keyGenerator?: (req: any) => string
   skipSuccessfulRequests?: boolean
   errorMessage?: string
 }

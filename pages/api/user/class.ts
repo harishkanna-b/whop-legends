@@ -9,11 +9,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     switch (method) {
       case 'GET':
-        return await handleGet(req, res, userId);
+        return await handleGet(req, res, userId || '');
       case 'POST':
-        return await handlePost(req, res, userId);
+        return await handlePost(req, res, userId || '');
       case 'PUT':
-        return await handlePut(req, res, userId);
+        return await handlePut(req, res, userId || '');
       default:
         res.setHeader('Allow', ['GET', 'POST', 'PUT']);
         return res.status(405).json({ error: `Method ${method} Not Allowed` });

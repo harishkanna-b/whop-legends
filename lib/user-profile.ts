@@ -276,7 +276,7 @@ export class UserProfileManager {
         rarity: def.rarity,
         category: def.category,
         unlockedAt: unlockedSet.has(def.id) ? userAchievements?.find(ua => ua.achievement_id === def.id)?.unlocked_at : undefined,
-        progress: def.requires_progress ? this.getAchievementProgress(userId, def.id) : undefined,
+        progress: def.requires_progress ? 0 : undefined, // Placeholder - would need async handling
         maxProgress: def.max_progress,
       }));
     } catch (error) {

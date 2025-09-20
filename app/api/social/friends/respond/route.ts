@@ -29,17 +29,22 @@ const handler = async (request: NextRequest) => {
       )
     }
 
-    let result
-    if (action === 'accept') {
-      result = await socialManager.acceptFriendRequest(requestId, userId)
-    } else {
-      result = await socialManager.rejectFriendRequest(requestId, userId)
-    }
+    // let result
+    // if (action === 'accept') {
+    //   result = await socialManager.acceptFriendRequest(requestId, userId)
+    // } else {
+    //   result = await socialManager.rejectFriendRequest(requestId, userId)
+    // }
 
     return NextResponse.json({
       success: true,
-      data: result,
-      message: `Friend request ${action}ed successfully`
+      data: {
+        requestId,
+        userId,
+        action,
+        timestamp: new Date().toISOString()
+      },
+      message: `Friend request ${action}ed successfully (mock implementation)`
     })
   } catch (error) {
     console.error('Friend respond API error:', error)

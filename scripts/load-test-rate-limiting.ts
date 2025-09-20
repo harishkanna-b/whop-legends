@@ -29,7 +29,7 @@ class RateLimitLoadTester {
   private config: LoadTestConfig
   private results: LoadTestResult
   private responseTimes: number[] = []
-  private startTime: number
+  private startTime: number = Date.now()
   private activeConnections: number = 0
 
   constructor(config: LoadTestConfig) {
@@ -387,4 +387,4 @@ if (require.main === module) {
   runLoadTests().catch(console.error)
 }
 
-export { RateLimitLoadTester, SystemMonitor, LoadTestConfig, LoadTestResult }
+export { RateLimitLoadTester, SystemMonitor, type LoadTestConfig, type LoadTestResult }

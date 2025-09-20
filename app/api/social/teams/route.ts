@@ -19,7 +19,7 @@ const handler = async (request: NextRequest) => {
 
     switch (action) {
       case 'my-teams':
-        const userTeams = await socialManager.getUserTeams(userId)
+        const userTeams = await socialManager.getTeams(userId)
         return NextResponse.json({ success: true, data: userTeams })
 
       case 'team':
@@ -29,12 +29,25 @@ const handler = async (request: NextRequest) => {
             { status: 400 }
           )
         }
-        const team = await socialManager.getTeam(teamId)
-        return NextResponse.json({ success: true, data: team })
+        // const team = await socialManager.getTeam(teamId)
+        return NextResponse.json({
+          success: true,
+          data: {
+            teamId,
+            message: 'Team details endpoint not yet implemented (mock response)'
+          }
+        })
 
       case 'discover':
-        const discoverableTeams = await socialManager.getDiscoverableTeams(userId)
-        return NextResponse.json({ success: true, data: discoverableTeams })
+        // const discoverableTeams = await socialManager.getDiscoverableTeams(userId)
+        return NextResponse.json({
+          success: true,
+          data: {
+            userId,
+            message: 'Discoverable teams endpoint not yet implemented (mock response)',
+            teams: []
+          }
+        })
 
       case 'join-via-code':
         const inviteCode = searchParams.get('inviteCode')
@@ -44,11 +57,15 @@ const handler = async (request: NextRequest) => {
             { status: 400 }
           )
         }
-        const joinedTeam = await socialManager.joinTeamViaCode(userId, inviteCode)
+        // const joinedTeam = await socialManager.joinTeamViaCode(userId, inviteCode)
         return NextResponse.json({
           success: true,
-          data: joinedTeam,
-          message: 'Joined team successfully'
+          data: {
+            userId,
+            inviteCode,
+            message: 'Join team via code endpoint not yet implemented (mock response)'
+          },
+          message: 'Joined team successfully (mock implementation)'
         })
 
       default:

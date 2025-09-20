@@ -99,7 +99,7 @@ export class LevelingManager {
           currentLevel: 1,
           currentXP: 0,
           totalXP: 0,
-          xpToNextLevel: this.calculateXPRequired(2, characterClass),
+          xpToNextLevel: this.calculateXPRequired(2, characterClass || undefined),
           progressPercentage: 0,
           levelHistory: [],
         };
@@ -107,9 +107,9 @@ export class LevelingManager {
 
       const currentLevel = userXP.level;
       const totalXP = userXP.total_xp;
-      const xpForCurrentLevel = this.calculateTotalXPToLevel(currentLevel, characterClass);
+      const xpForCurrentLevel = this.calculateTotalXPToLevel(currentLevel, characterClass || undefined);
       const currentXP = totalXP - xpForCurrentLevel;
-      const xpToNextLevel = this.calculateXPRequired(currentLevel + 1, characterClass);
+      const xpToNextLevel = this.calculateXPRequired(currentLevel + 1, characterClass || undefined);
       const progressPercentage = Math.min(100, (currentXP / xpToNextLevel) * 100);
 
       // Get level history
@@ -166,15 +166,15 @@ export class LevelingManager {
 
       // Calculate new totals
       const newTotalXP = currentProgression.totalXP + finalAmount;
-      const newLevel = this.calculateLevelFromXP(newTotalXP, characterClass);
+      const newLevel = this.calculateLevelFromXP(newTotalXP, characterClass || undefined);
 
       const levelUps: LevelUpNotification[] = [];
 
       // Check for level ups
       if (newLevel > currentProgression.currentLevel) {
         for (let level = currentProgression.currentLevel + 1; level <= newLevel; level++) {
-          const unlocks = this.getLevelUnlocks(level, characterClass);
-          const message = this.generateLevelUpMessage(level, characterClass);
+          const unlocks = this.getLevelUnlocks(level, characterClass || undefined);
+          const message = this.generateLevelUpMessage(level, characterClass || undefined);
 
           levelUps.push({
             userId,
@@ -456,8 +456,8 @@ export class LevelingManager {
       return (data || []).map((entry, index) => ({
         rank: index + 1,
         userId: entry.user_id,
-        username: entry.users?.username || 'Anonymous',
-        avatarUrl: entry.users?.avatar_url,
+        username: entry.users?.[0]?.username || 'Anonymous',
+        avatarUrl: entry.users?.[0]?.avatar_url,
         level: entry.level,
         totalXP: entry.total_xp,
         classId: entry.class_id,

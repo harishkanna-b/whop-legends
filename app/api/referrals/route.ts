@@ -27,7 +27,7 @@ async function handler(request: NextRequest) {
         return NextResponse.json({ success: true, data: campaigns })
 
       case 'analytics':
-        const analytics = await referralManager.getReferralAnalytics(userId, timeframe)
+        const analytics = await referralManager.getReferralAnalytics(userId, timeframe === 'all' ? undefined : timeframe)
         return NextResponse.json({ success: true, data: analytics })
 
       case 'generate-link':

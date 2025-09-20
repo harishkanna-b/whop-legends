@@ -44,13 +44,20 @@ export default function UserDashboard({ userId }: UserDashboardProps) {
       // Load user profile data
       const profileData = await UserProfileManager.getProfile(userId)
       const progression = await LevelingManager.getUserProgression(userId)
+      const userClass = await CharacterClassManager.getUserClass(userId)
+      const characterClass = userClass ? CharacterClassManager.getClassById(userClass.classId) : null
 
       setProfile({
-        level: progression.level,
+        level: progression.currentLevel,
         totalXP: progression.totalXP,
-        characterClass: progression.characterClass,
+        characterClass,
         stats: profileData.stats,
-        recentActivity: profileData.recentActivity
+        recentActivity: profileData.recentActivity.map((activity: any) => ({
+          type: activity.type,
+          description: activity.description,
+          timestamp: activity.createdAt || activity.timestamp,
+          value: activity.value
+        }))
       })
     } catch (err) {
       console.error('Error loading user data:', err)

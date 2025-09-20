@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AchievementManager } from '@/lib/achievements'
+import { achievementManager } from '@/lib/achievements'
 
 interface AchievementsDisplayProps {
   userId: string
@@ -45,8 +45,8 @@ export default function AchievementsDisplay({ userId, compact = false }: Achieve
       setLoading(true)
 
       // Load all achievements and user progress
-      const allAchievements = AchievementManager.getAllAchievements()
-      const userProgress = await AchievementManager.getUserAchievements(userId)
+      const allAchievements = await achievementManager.getAllAchievements()
+      const userProgress = await achievementManager.getUserAchievements(userId)
 
       // Group achievements by category
       const categoriesMap = new Map<string, AchievementCategory>()
@@ -62,18 +62,28 @@ export default function AchievementsDisplay({ userId, compact = false }: Achieve
           points += achievement.points
         }
 
-        if (!categoriesMap.has(achievement.category)) {
-          categoriesMap.set(achievement.category, {
-            id: achievement.category,
-            name: achievement.category.charAt(0).toUpperCase() + achievement.category.slice(1),
-            description: `${achievement.category} related achievements`,
+        const categoryId = typeof achievement.category === 'string' ? achievement.category : achievement.category.id
+        if (!categoriesMap.has(categoryId)) {
+          const categoryName = typeof achievement.category === 'string'
+            ? achievement.category
+            : achievement.category.name
+          categoriesMap.set(categoryId, {
+            id: categoryId,
+            name: categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
+            description: `${categoryName} related achievements`,
             achievements: []
           })
         }
 
-        const category = categoriesMap.get(achievement.category)!
+        const category = categoriesMap.get(categoryId)!
         category.achievements.push({
-          ...achievement,
+          id: achievement.id,
+          name: achievement.name,
+          description: achievement.description,
+          icon: achievement.icon,
+          category: categoryId, // Convert to string for the component interface
+          rarity: achievement.rarity.name as 'common' | 'rare' | 'epic' | 'legendary', // Convert rarity
+          points: achievement.points,
           unlockedAt: userAchievement?.unlockedAt,
           progress: userAchievement?.progress || 0,
           maxProgress: userAchievement?.maxProgress || achievement.maxProgress || 1
