@@ -1,0 +1,126 @@
+{
+  "issues": [
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.local",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.local",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.local",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.local",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "critical",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Hardcoded secret detected in environment file",
+      "recommendation": "Use environment variables or secret management service"
+    },
+    {
+      "severity": "high",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Required environment variable NEXT_PUBLIC_SUPABASE_URL is missing",
+      "recommendation": "Add NEXT_PUBLIC_SUPABASE_URL to environment configuration"
+    },
+    {
+      "severity": "high",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Required environment variable NEXT_PUBLIC_SUPABASE_ANON_KEY is missing",
+      "recommendation": "Add NEXT_PUBLIC_SUPABASE_ANON_KEY to environment configuration"
+    },
+    {
+      "severity": "high",
+      "category": "Environment",
+      "file": ".env.development",
+      "message": "Required environment variable SUPABASE_SERVICE_ROLE_KEY is missing",
+      "recommendation": "Add SUPABASE_SERVICE_ROLE_KEY to environment configuration"
+    },
+    {
+      "severity": "high",
+      "category": "Authentication",
+      "file": "lib/supabase-client.ts",
+      "message": "Insufficient token validation detected",
+      "recommendation": "Implement proper token validation and verification"
+    },
+    {
+      "severity": "medium",
+      "category": "Authentication",
+      "file": "lib/supabase-client.ts",
+      "message": "Session management not implemented",
+      "recommendation": "Implement proper session management"
+    },
+    {
+      "severity": "critical",
+      "category": "Webhook Security",
+      "file": "app/api/webhooks/route.ts",
+      "message": "No webhook signature verification detected",
+      "recommendation": "Implement webhook signature verification"
+    },
+    {
+      "severity": "high",
+      "category": "Webhook Security",
+      "file": "app/api/webhooks/route.ts",
+      "message": "Fallback webhook secret detected",
+      "recommendation": "Remove fallback secret and implement proper secret validation"
+    },
+    {
+      "severity": "medium",
+      "category": "Webhook Security",
+      "file": "app/api/webhooks/route.ts",
+      "message": "No idempotency handling detected",
+      "recommendation": "Implement idempotency to handle duplicate webhooks"
+    }
+  ],
+  "summary": {
+    "critical": 9,
+    "high": 5,
+    "medium": 2,
+    "low": 0,
+    "info": 0,
+    "total": 16
+  },
+  "timestamp": "2025-09-18T21:04:15.018Z",
+  "version": "1.0.0"
+}
