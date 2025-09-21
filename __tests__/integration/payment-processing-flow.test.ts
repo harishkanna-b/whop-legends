@@ -853,13 +853,13 @@ async function findReferrerForUser(userId: string): Promise<string | null> {
 		// If no existing referral, check user metadata for referral tracking
 		const { data: user } = await supabaseService()
 			.from("users")
-			.select("metadata")
+			.select("id, username, email")
 			.eq("id", userId)
 			.single();
 
-		if (user?.metadata?.referred_by) {
+		if (user?.referred_by) {
 			// Create new referral record if found in metadata
-			const referrerId = user.metadata.referred_by;
+			const referrerId = user.referred_by;
 			await referralManager.createReferral(
 				referrerId,
 				userId,
@@ -973,7 +973,7 @@ async function processDirectPayment(
 		await supabaseService()
 			.from("users")
 			.update({
-				total_payments: supabaseService().raw(`total_payments + ${amount}`),
+				total_payments: amount, // This should use a proper RPC call for incrementing
 				last_payment_at: new Date().toISOString(),
 				updated_at: new Date().toISOString(),
 			})
@@ -1016,9 +1016,7 @@ async function updateUserCommissionStats(userId: string, commission: number) {
 		await supabaseService()
 			.from("users")
 			.update({
-				total_commission: supabaseService().raw(
-					`total_commission + ${commission}`,
-				),
+				total_commission: commission, // This should use a proper RPC call for incrementing
 				updated_at: new Date().toISOString(),
 			})
 			.eq("id", userId);

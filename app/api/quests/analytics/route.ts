@@ -1,7 +1,7 @@
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { supabaseService } from "@/lib/supabase-client";
 // @ts-nocheck
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
@@ -88,6 +88,42 @@ export async function GET(request: NextRequest) {
 	}
 }
 
+interface QuestItem {
+	id: string;
+	quest_type: string;
+}
+
+interface UserQuestItem {
+	quest_id: string;
+	user_id: string;
+	is_completed: boolean;
+}
+
+interface UserQuestEngagement {
+	user_id: string;
+	status?: string;
+}
+
+interface UserQuestWithQuestData {
+	quest_id: string;
+	quest?: Array<{
+		title: string;
+		difficulty: string;
+		quest_type: string;
+	}>;
+	is_completed: boolean;
+	created_at: string;
+}
+
+interface UserQuestForTrends {
+	created_at: string;
+	completed_at: string | null;
+	is_completed: boolean;
+	quest?: Array<{
+		quest_type: string;
+	}>;
+}
+
 /**
  * Fallback analytics calculation when RPC is not available
  */
@@ -116,18 +152,18 @@ async function getFallbackAnalytics(
 		if (userQuestError) throw userQuestError;
 
 		const filteredQuests = questType
-			? quests.filter((q: any) => q.quest_type === questType)
+			? quests.filter((q: QuestItem) => q.quest_type === questType)
 			: quests;
 
-		const filteredUserQuests = userQuests.filter((uq: any) =>
-			filteredQuests.some((q: any) => q.id === uq.quest_id),
+		const filteredUserQuests = userQuests.filter((uq: UserQuestItem) =>
+			filteredQuests.some((q: QuestItem) => q.id === uq.quest_id),
 		);
 
 		const totalQuests = filteredQuests.length;
 		const completedQuests = filteredUserQuests.filter(
-			(uq: any) => uq.is_completed,
+			(uq: UserQuestItem) => uq.is_completed,
 		).length;
-		const totalUsers = new Set(filteredUserQuests.map((uq: any) => uq.user_id))
+		const totalUsers = new Set(filteredUserQuests.map((uq: UserQuestItem) => uq.user_id))
 			.size;
 
 		const analytics = {
@@ -159,7 +195,7 @@ async function getFallbackAnalytics(
 /**
  * Calculate user engagement metrics
  */
-function calculateEngagementMetrics(userQuests: any[]) {
+function calculateEngagementMetrics(userQuests: UserQuestEngagement[]) {
 	const uniqueUsers = new Set(userQuests.map((uq) => uq.user_id));
 	const totalQuests = userQuests.length;
 	const completedQuests = userQuests.filter((uq) => uq.is_completed).length;
@@ -202,11 +238,10 @@ async function getPopularQuests(
 		// Group by quest and calculate completion counts
 		const questCounts: Record<
 			string,
-			{ quest: any; completions: number; attempts: number }
+			{ quest: Array<{ title: string; difficulty: string; quest_type: string }>; completions: number; attempts: number }
 		> = {};
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(data || []).forEach((uq: any) => {
+		(data || []).forEach((uq: UserQuestWithQuestData) => {
 			if (!questCounts[uq.quest_id]) {
 				questCounts[uq.quest_id] = {
 					quest: uq.quest,
@@ -262,7 +297,7 @@ async function getCompletionTrends(
 
 		const filteredData = questType
 			? data.filter(
-					(uq: any) => (uq.quest as any)?.[0]?.quest_type === questType,
+					(uq: UserQuestForTrends) => (uq.quest?.[0]?.quest_type) === questType,
 				)
 			: data;
 
@@ -270,7 +305,7 @@ async function getCompletionTrends(
 		const dailyStats: Record<string, { created: number; completed: number }> =
 			{};
 
-		(filteredData || []).forEach((uq: any) => {
+		(filteredData || []).forEach((uq: UserQuestForTrends) => {
 			const date = new Date(uq.created_at).toISOString().split("T")[0];
 			if (!dailyStats[date]) {
 				dailyStats[date] = { created: 0, completed: 0 };

@@ -3,7 +3,7 @@ import {
 	checkDatabaseConnection,
 	getCharacterClasses,
 } from "../../lib/database-utils";
-import { supabase } from "../../lib/supabase-client";
+import { supabase, supabaseService } from "../../lib/supabase-client";
 
 // Mock data
 const mockCharacterClasses = [
@@ -54,14 +54,14 @@ describe("Database Connection", () => {
 
 	it("should handle database errors gracefully", async () => {
 		// Mock database error
-		const mockSelect = supabase().from("nonexistent_table").select("*");
+		const mockSelect = supabaseService().from("users").select("*");
 		mockSelect.limit = jest.fn().mockResolvedValue({
 			data: null,
 			error: { message: "Table does not exist" },
 		});
 
-		const { data, error } = await supabase()
-			.from("nonexistent_table")
+		const { data, error } = await supabaseService()
+			.from("users")
 			.select("*")
 			.limit(1);
 

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase-client";
+import { supabaseService } from "./supabase-client";
 
 export interface Achievement {
 	id: string;
@@ -435,7 +435,7 @@ export class AchievementManager {
 	private async initializeAchievements(): Promise<void> {
 		try {
 			// Check if achievements exist in database, if not insert them
-			const { data: existingAchievements } = await supabase()
+			const { data: existingAchievements } = await supabaseService()
 				.from("achievements")
 				.select("id");
 
@@ -445,14 +445,12 @@ export class AchievementManager {
 					await supabase().from("achievements").insert({
 						id: achievement.id,
 						name: achievement.name,
+						display_name: achievement.name,
 						description: achievement.description,
-						icon: achievement.icon,
-						category_id: achievement.category.id,
-						rarity_id: achievement.rarity.id,
-						points: achievement.points,
-						requirements: achievement.requirements,
-						rewards: achievement.rewards,
-						max_progress: achievement.maxProgress,
+						icon_url: achievement.icon,
+						category: achievement.category.id,
+						rarity: achievement.rarity.id,
+						requirements: achievement.requirements as any,
 						is_active: achievement.isActive,
 						created_at: achievement.createdAt,
 						updated_at: achievement.updatedAt,
@@ -625,9 +623,12 @@ export class AchievementManager {
 					await supabase()
 						.from("user_achievements")
 						.update({
-							progress: newProgress,
-							last_progressed_at: new Date().toISOString(),
-							metadata: { ...userAchievement.metadata, ...metadata },
+							progress_data: {
+								progress: newProgress,
+								last_progressed_at: new Date().toISOString(),
+								...(userAchievement.metadata as object),
+								...(metadata as object),
+							},
 						})
 						.eq("id", userAchievement.id);
 
@@ -746,12 +747,12 @@ export class AchievementManager {
 
 	private async grantTitle(userId: string, title: string): Promise<void> {
 		try {
-			// Grant title to user (implement based on your system)
-			await supabase().from("user_titles").insert({
-				user_id: userId,
-				title,
-				granted_at: new Date().toISOString(),
-			});
+			// TODO: Fix this once the user_titles table is created
+			// await supabase().from("user_titles").insert({
+			// 	user_id: userId,
+			// 	title,
+			// 	granted_at: new Date().toISOString(),
+			// });
 		} catch (error) {
 			console.error("Error granting title:", error);
 		}
@@ -759,12 +760,12 @@ export class AchievementManager {
 
 	private async grantBadge(userId: string, badge: string): Promise<void> {
 		try {
-			// Grant badge to user (implement based on your system)
-			await supabase().from("user_badges").insert({
-				user_id: userId,
-				badge,
-				granted_at: new Date().toISOString(),
-			});
+			// TODO: Fix this once the user_badges table is created
+			// await supabase().from("user_badges").insert({
+			// 	user_id: userId,
+			// 	badge,
+			// 	granted_at: new Date().toISOString(),
+			// });
 		} catch (error) {
 			console.error("Error granting badge:", error);
 		}
@@ -912,6 +913,21 @@ export class AchievementManager {
 		} catch (error) {
 			console.error("Error getting recent achievements:", error);
 			return [];
+		}
+	}
+
+	// Method to check and unlock achievements based on events
+	async checkAndUnlockAchievements(
+		userId: string,
+		event: {
+			type: "referral" | "level" | "xp" | "value" | "streak" | "custom";
+			data: any;
+		},
+	): Promise<void> {
+		try {
+			await this.updateProgress(userId, event.type, event.data.value || 0, event.data);
+		} catch (error) {
+			console.error("Error in checkAndUnlockAchievements:", error);
 		}
 	}
 }

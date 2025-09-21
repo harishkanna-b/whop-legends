@@ -53,6 +53,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 					.from("users")
 					.insert({
 						id: session.user.id,
+						whop_user_id: session.user.id,
+						company_id: session.user.user_metadata?.company_id,
 						username:
 							session.user.user_metadata?.username ||
 							`user_${session.user.id.slice(0, 8)}`,

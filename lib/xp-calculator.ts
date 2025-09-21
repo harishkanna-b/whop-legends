@@ -147,7 +147,7 @@ export const checkLevelUp = async (
 
 	if (newLevel > oldLevel) {
 		// User leveled up!
-		const rewards = await getLevelUpRewards(newLevel, user.character_class);
+		const rewards = await getLevelUpRewards(newLevel, user.character_class as "scout" | "sage" | "champion");
 
 		// Update user level
 		await supabaseService()

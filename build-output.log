@@ -1,0 +1,10 @@
+
+> whop-nextjs-app-template@0.1.0 build /Users/harishkanna/projects/whop-legends
+> next build
+
+   ▲ Next.js 15.3.2
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.0s
+   Linting and checking validity of types ...

@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 		const newQuests = await QuestEngine.generateUserQuests(config);
 
 		// Assign quests to user (need to import supabase)
-		const { data: assignedQuests, error: assignError } = await supabase()
+		const { data: assignedQuests } = await supabase()
 			.from("user_quests")
 			.insert(
 				newQuests.map((quest) => ({

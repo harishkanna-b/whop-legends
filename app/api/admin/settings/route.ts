@@ -86,7 +86,7 @@ async function handler(request: NextRequest) {
 
 export const GET = async (request: NextRequest) => {
 	// Apply rate limiting
-	const rateLimitResult = await rateLimitMiddleware(request as any, {
+	const rateLimitResult = await rateLimitMiddleware(request as unknown as import("next").NextApiRequest, {
 		windowMs: 60 * 1000, // 1 minute
 		maxRequests: 30, // 30 requests per minute
 		keyGenerator: (req) =>
@@ -105,7 +105,7 @@ export const GET = async (request: NextRequest) => {
 
 export const POST = async (request: NextRequest) => {
 	// Apply rate limiting
-	const rateLimitResult = await rateLimitMiddleware(request as any, {
+	const rateLimitResult = await rateLimitMiddleware(request as unknown as import("next").NextApiRequest, {
 		windowMs: 60 * 1000, // 1 minute
 		maxRequests: 30, // 30 requests per minute
 		keyGenerator: (req) =>

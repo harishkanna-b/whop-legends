@@ -1,8 +1,9 @@
+import { type Database } from "@/lib/database.types";
 import { QuestEngine } from "@/lib/quest-system/quest-engine";
 import { RewardManager } from "@/lib/quest-system/reward-manager";
 import { supabase, supabaseService } from "@/lib/supabase-client";
 import { type NextRequest, NextResponse } from "next/server";
-import { type Database } from "@/lib/supabase-client";
+
 
 type UserQuestWithQuest = Database["public"]["Tables"]["user_quests"]["Row"] & {
 	quest: Database["public"]["Tables"]["quests"]["Row"];

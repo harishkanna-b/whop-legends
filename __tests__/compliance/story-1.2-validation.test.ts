@@ -20,15 +20,15 @@ describe("Story 1.2 - Whop Integration and Webhook Setup Compliance", () => {
 	describe("Acceptance Criterion 1: Whop API client configuration", () => {
 		it("should have proper authentication configuration", () => {
 			// Verify environment variables are configured
-			expect(process.env.WHOP_API_KEY).toBeDefined();
-			expect(typeof process.env.WHOP_API_KEY).toBe("string");
-			expect(process.env.WHOP_API_KEY.length).toBeGreaterThan(0);
+	expect(process.env.WHOP_API_KEY).toBeDefined();
+	expect(typeof process.env.WHOP_API_KEY).toBe("string");
+	expect(process.env.WHOP_API_KEY!.length).toBeGreaterThan(0);
 		});
 
 		it("should have webhook secret configured", () => {
-			expect(process.env.WHOP_WEBHOOK_SECRET).toBeDefined();
-			expect(typeof process.env.WHOP_WEBHOOK_SECRET).toBe("string");
-			expect(process.env.WHOP_WEBHOOK_SECRET.length).toBeGreaterThan(0);
+		expect(process.env.WHOP_WEBHOOK_SECRET).toBeDefined();
+		expect(typeof process.env.WHOP_WEBHOOK_SECRET).toBe("string");
+		expect(process.env.WHOP_WEBHOOK_SECRET!.length).toBeGreaterThan(0);
 		});
 
 		it("should have rate limiting configured for API calls", () => {
@@ -241,7 +241,7 @@ describe("Story 1.2 - Whop Integration and Webhook Setup Compliance", () => {
 					"x-whop-event": "referral.created",
 					"content-type": "application/json",
 				},
-				body: "invalid-json{",
+				body: Buffer.from("invalid-json{"),
 			});
 
 			webhookHandler(req, res);

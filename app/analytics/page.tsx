@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
 						{tabs.map((tab) => (
 							<button
 								key={tab.key}
-								onClick={() => setActiveTab(tab.key as any)}
+								onClick={() => setActiveTab(tab.key as "dashboard" | "members" | "reports" | "insights")}
 								className={`
                   py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2
                   ${

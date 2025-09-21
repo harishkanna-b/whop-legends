@@ -1,7 +1,7 @@
 import { rateLimitMiddleware } from "@/lib/rate-limit";
 import { type NextRequest, NextResponse } from "next/server";
 
-async function handler(request: NextRequest) {
+async function handler() {
 	try {
 		// In a real implementation, these would come from your database
 		const achievementStats = {
@@ -55,9 +55,9 @@ async function handler(request: NextRequest) {
 	}
 }
 
-export const GET = async (request: NextRequest) => {
+export const GET = async (_request: NextRequest) => {
 	// Apply rate limiting
-	const rateLimitResult = await rateLimitMiddleware(request as any, {
+	const rateLimitResult = await rateLimitMiddleware(_request as unknown as import("next").NextApiRequest, {
 		windowMs: 60 * 1000, // 1 minute
 		maxRequests: 30, // 30 requests per minute
 		keyGenerator: (req) =>
@@ -71,5 +71,5 @@ export const GET = async (request: NextRequest) => {
 		);
 	}
 
-	return await handler(request);
+	return await handler();
 };

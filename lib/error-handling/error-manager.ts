@@ -461,6 +461,45 @@ export class ErrorManager {
 		this.errorHandlers.set(handlerId, handler);
 	}
 
+	// Test helper methods - these expose private functionality for testing purposes
+	getRecoveryStrategies(): Map<string, ErrorRecoveryStrategy> {
+		return this.recoveryStrategies;
+	}
+
+	calculateRetryDelayForTesting(
+		strategy: ErrorRecoveryStrategy,
+		attempt: number,
+	): number {
+		return this.calculateRetryDelay(strategy, attempt);
+	}
+
+	logErrorForTesting(error: SystemError): void {
+		this.logError(error);
+	}
+
+	determineSeverityForTesting(
+		error: any,
+	): "low" | "medium" | "high" | "critical" {
+		return this.determineSeverity(error);
+	}
+
+	isRetryableForTesting(error: any): boolean {
+		return this.isRetryable(error);
+	}
+
+	getCircuitBreakers(): Map<string, CircuitBreaker> {
+		return this.circuitBreakers;
+	}
+
+	getErrorMetricsInternal(): Map<string, any> {
+		return this.errorMetrics;
+	}
+
+	// Static method for testing to reset singleton instance
+	static resetInstance(): void {
+		ErrorManager.instance = null as any;
+	}
+
 	getErrorMetrics(): ErrorMetrics {
 		const now = Date.now();
 		const oneHourAgo = now - 60 * 60 * 1000;

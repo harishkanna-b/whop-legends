@@ -26,7 +26,7 @@ export function useWhopUser() {
 				metadata: {
 					companyId: user.company_id,
 					// Include any other metadata from raw_user_meta
-					...user.raw_user_meta,
+					...(typeof user.raw_user_meta === 'object' && user.raw_user_meta),
 				},
 			}
 		: null;

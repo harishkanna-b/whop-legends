@@ -9,13 +9,13 @@ describe("Database Schema Validation", () => {
 		const validClasses = ["scout", "sage", "champion"];
 		const invalidClasses = ["warrior", "mage", "rogue"];
 
-		validClasses.forEach((cls) => {
+		for (const cls of validClasses) {
 			expect(["scout", "sage", "champion"]).toContain(cls);
-		});
+		}
 
-		invalidClasses.forEach((cls) => {
+		for (const cls of invalidClasses) {
 			expect(["scout", "sage", "champion"]).not.toContain(cls);
-		});
+		}
 	});
 
 	it("should have valid quest types", () => {
@@ -29,50 +29,50 @@ describe("Database Schema Validation", () => {
 		];
 
 		// Test quest type constraints
-		validQuestTypes.forEach((type) => {
+		for (const type of validQuestTypes) {
 			expect(["daily", "weekly", "monthly", "special"]).toContain(type);
-		});
+		}
 
 		// Test difficulty constraints
-		validDifficulties.forEach((difficulty) => {
+		for (const difficulty of validDifficulties) {
 			expect(["easy", "medium", "hard", "epic"]).toContain(difficulty);
-		});
+		}
 
 		// Test target type constraints
-		validTargetTypes.forEach((target) => {
+		for (const target of validTargetTypes) {
 			expect(["referrals", "commission", "level", "achievements"]).toContain(
 				target,
 			);
-		});
+		}
 	});
 
 	it("should have valid referral statuses", () => {
 		const validStatuses = ["pending", "completed", "expired"];
 		const validCommissionStatuses = ["pending", "paid", "cancelled"];
 
-		validStatuses.forEach((status) => {
+		for (const status of validStatuses) {
 			expect(["pending", "completed", "expired"]).toContain(status);
-		});
+		}
 
-		validCommissionStatuses.forEach((status) => {
+		for (const status of validCommissionStatuses) {
 			expect(["pending", "paid", "cancelled"]).toContain(status);
-		});
+		}
 	});
 
 	it("should have valid achievement rarities", () => {
 		const validRarities = ["common", "rare", "epic", "legendary"];
 
-		validRarities.forEach((rarity) => {
+		for (const rarity of validRarities) {
 			expect(["common", "rare", "epic", "legendary"]).toContain(rarity);
-		});
+		}
 	});
 
 	it("should have valid guild roles", () => {
 		const validRoles = ["leader", "officer", "member"];
 
-		validRoles.forEach((role) => {
+		for (const role of validRoles) {
 			expect(["leader", "officer", "member"]).toContain(role);
-		});
+		}
 	});
 
 	it("should validate XP calculation logic", () => {
@@ -129,9 +129,9 @@ describe("Database Schema Validation", () => {
 
 		// Test that codes only contain valid characters
 		const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		[...code1, ...code2].forEach((char) => {
+		for (const char of [...code1, ...code2]) {
 			expect(validChars).toContain(char);
-		});
+		}
 	});
 
 	it("should validate data model relationships", () => {
@@ -179,9 +179,9 @@ describe("Database Schema Validation", () => {
 			"getPaginatedData",
 		];
 
-		expectedFunctions.forEach((funcName) => {
+		for (const funcName of expectedFunctions) {
 			expect(typeof funcName).toBe("string");
 			expect(funcName.length).toBeGreaterThan(0);
-		});
+		}
 	});
 });

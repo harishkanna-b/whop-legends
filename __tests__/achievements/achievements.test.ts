@@ -143,7 +143,7 @@ describe("AchievementManager", () => {
 
 		test("achievements should have valid requirements", () => {
 			DEFAULT_ACHIEVEMENTS.forEach((achievement) => {
-				expect(achievement.requirements).toHaveLengthGreaterThan(0);
+				expect(achievement.requirements.length).toBeGreaterThan(0);
 				achievement.requirements.forEach((req) => {
 					expect(req).toHaveProperty("type");
 					expect(req).toHaveProperty("target");

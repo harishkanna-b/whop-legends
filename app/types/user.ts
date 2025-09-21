@@ -1,3 +1,5 @@
+import { Json } from "@/lib/database.types";
+
 export interface User {
 	id: string;
 	whop_user_id?: string;
@@ -5,7 +7,7 @@ export interface User {
 	username: string;
 	email?: string | null;
 	avatar_url?: string | null;
-	character_class: "scout" | "sage" | "champion";
+	character_class: string;
 	level: number;
 	experience_points: number;
 	prestige_level: number;
@@ -13,7 +15,7 @@ export interface User {
 	total_commission: number;
 	created_at: string;
 	updated_at: string;
-	raw_user_meta?: Record<string, any> | null;
+	raw_user_meta?: Json | null;
 }
 
 export interface UserContextType {

@@ -1,6 +1,6 @@
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { QuestEngine } from "@/lib/quest-system/quest-engine";
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 
 /**
  * POST /api/quests/rewards - Claim quest rewards

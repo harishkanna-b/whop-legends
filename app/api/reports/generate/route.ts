@@ -48,31 +48,35 @@ export async function GET(request: NextRequest) {
 
 		// Get available reports
 		if (!reportType) {
-			const { data: reports } = await supabase()
-				.from("report_templates")
-				.select("*")
-				.eq("company_id", companyId)
-				.order("generated_at", { ascending: false })
-				.limit(50);
+			// TODO: Fix this once the report_templates table is created
+			// const { data: reports } = await supabase()
+			// 	.from("report_templates")
+			// 	.select("*")
+			// 	.eq("company_id", companyId)
+			// 	.order("generated_at", { ascending: false })
+			// 	.limit(50);
 
-			return NextResponse.json(reports || []);
+			// return NextResponse.json(reports || []);
+			return NextResponse.json([]);
 		}
 
 		// Get specific report
-		const { data: report } = await supabase()
-			.from("report_templates")
-			.select("*")
-			.eq("company_id", companyId)
-			.eq("report_type", reportType)
-			.order("generated_at", { ascending: false })
-			.limit(1)
-			.single();
+		// TODO: Fix this once the report_templates table is created
+		// const { data: report } = await supabase()
+		// 	.from("report_templates")
+		// 	.select("*")
+		// 	.eq("company_id", companyId)
+		// 	.eq("report_type", reportType)
+		// 	.order("generated_at", { ascending: false })
+		// 	.limit(1)
+		// 	.single();
 
-		if (!report) {
-			return NextResponse.json({ error: "Report not found" }, { status: 404 });
-		}
+		// if (!report) {
+		// 	return NextResponse.json({ error: "Report not found" }, { status: 404 });
+		// }
 
-		return NextResponse.json(report);
+		// return NextResponse.json(report);
+		return NextResponse.json({ error: "Report not found" }, { status: 404 });
 	} catch (error) {
 		console.error("Error fetching reports:", error);
 		return NextResponse.json(

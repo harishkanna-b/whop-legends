@@ -1,7 +1,69 @@
-import { supabase, supabaseService } from "@/lib/supabase-client";
+import { supabaseService } from "@/lib/supabase-client";
 import { type NextRequest, NextResponse } from "next/server";
+import { Database } from "@/lib/database.types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// TypeScript interfaces for the analytics data
+interface UserQuestWithRelations {
+  id: string;
+  user_id: string;
+  quest_id: string;
+  is_completed: boolean;
+  progress_value: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  reward_claimed: boolean;
+  reward_claimed_at: string | null;
+  quest?: Database['public']['Tables']['quests']['Row'];
+  user?: {
+    id: string;
+    character_class: string;
+    company_id: string;
+  };
+}
+
+interface QuestActivityItem {
+  user_id: string;
+}
+
+interface DailyActivityItem {
+  created_at: string;
+  is_completed: boolean;
+}
+
+interface PerformanceItem {
+  user_id: string;
+  user?: {
+    username: string;
+    character_class: string;
+    level: number;
+  };
+  quest?: Array<{
+    reward_xp: number;
+    reward_commission: number;
+  }>;
+}
+
+interface RewardItem {
+  quest?: Array<{
+    reward_xp: number;
+    reward_commission: number;
+    quest_type: string;
+    difficulty: string;
+  }>;
+  user?: Array<{
+    character_class: string;
+  }>;
+}
+
+interface CompletionAnalytics {
+  totalQuests: number;
+  completedQuests: number;
+  completionRate: number;
+  byType: Record<string, { total: number; completed: number }>;
+  byDifficulty: Record<string, { total: number; completed: number }>;
+  byCharacterClass: Record<string, { total: number; completed: number }>;
+}
 
 export async function GET(
 	request: NextRequest,
@@ -66,7 +128,7 @@ async function getCompletionRates(
 	companyId: string,
 	userId: string | null,
 	days: number,
-) {
+): Promise<CompletionAnalytics | { error: string }> {
 	const cutoffDate = new Date();
 	cutoffDate.setDate(cutoffDate.getDate() - days);
 
@@ -95,7 +157,7 @@ async function getCompletionRates(
 	}
 
 	const totalQuests = userQuests.length;
-	const completedQuests = userQuests.filter((q: any) => q.is_completed);
+	const completedQuests = userQuests.filter((q: UserQuestWithRelations) => q.is_completed);
 	const completionRate =
 		totalQuests > 0 ? (completedQuests.length / totalQuests) * 100 : 0;
 
@@ -105,9 +167,9 @@ async function getCompletionRates(
 	const byCharacterClass: Record<string, { total: number; completed: number }> =
 		{};
 
-	userQuests.forEach((userQuest: any) => {
+	userQuests.forEach((userQuest: UserQuestWithRelations) => {
 		const quest = userQuest.quest;
-		const user = userQuest.user as any;
+		const user = userQuest.user;
 
 		// By type
 		if (quest) {
@@ -194,8 +256,13 @@ async function getEngagementMetrics(
 		.gte("created_at", cutoffDate.toISOString())
 		.eq("is_completed", false);
 
+	if (userError) {
+		console.error("Error fetching active users:", userError);
+		return { error: "Failed to fetch active users data" };
+	}
+
 	const uniqueActiveUsers = new Set(
-		activeUsers?.map((u: any) => u.user_id) || [],
+		activeUsers?.map((u: QuestActivityItem) => u.user_id) || [],
 	).size;
 
 	// Get total users in company
@@ -203,6 +270,11 @@ async function getEngagementMetrics(
 		.from("users")
 		.select("id")
 		.eq("company_id", companyId);
+
+	if (totalError) {
+		console.error("Error fetching total users:", totalError);
+		return { error: "Failed to fetch total users data" };
+	}
 
 	const engagementRate =
 		totalUsers && totalUsers.length > 0
@@ -215,10 +287,15 @@ async function getEngagementMetrics(
 		.select("created_at, is_completed")
 		.gte("created_at", cutoffDate.toISOString());
 
+	if (activityError) {
+		console.error("Error fetching daily activity:", activityError);
+		return { error: "Failed to fetch daily activity data" };
+	}
+
 	const activityByDay: Record<string, { created: number; completed: number }> =
 		{};
 
-	dailyActivity?.forEach((quest: any) => {
+	dailyActivity?.forEach((quest: DailyActivityItem) => {
 		const date = new Date(quest.created_at).toISOString().split("T")[0];
 		if (!activityByDay[date]) {
 			activityByDay[date] = { created: 0, completed: 0 };
@@ -265,6 +342,11 @@ async function getPerformanceAnalytics(
 		.gte("created_at", cutoffDate.toISOString())
 		.eq("is_completed", true);
 
+	if (perfError) {
+		console.error("Error fetching top performers:", perfError);
+		return { error: "Failed to fetch performance data" };
+	}
+
 	const userStats: Record<
 		string,
 		{
@@ -277,9 +359,9 @@ async function getPerformanceAnalytics(
 		}
 	> = {};
 
-	topPerformers?.forEach((item: any) => {
-		const user = item.user as any;
-		const quest = item.quest as any;
+	topPerformers?.forEach((item: PerformanceItem) => {
+		const user = item.user;
+		const quest = item.quest;
 
 		if (!userStats[item.user_id]) {
 			userStats[item.user_id] = {
@@ -343,13 +425,13 @@ async function getRewardAnalytics(
 	}
 
 	const totalXP = claimedRewards.reduce(
-		(sum: number, item: any) =>
-			sum + ((item.quest as any)?.[0]?.reward_xp || 0),
+		(sum: number, item: RewardItem) =>
+			sum + ((item.quest?.[0]?.reward_xp) || 0),
 		0,
 	);
 	const totalCommission = claimedRewards.reduce(
-		(sum: number, item: any) =>
-			sum + ((item.quest as any)?.[0]?.reward_commission || 0),
+		(sum: number, item: RewardItem) =>
+			sum + ((item.quest?.[0]?.reward_commission) || 0),
 		0,
 	);
 
@@ -363,9 +445,9 @@ async function getRewardAnalytics(
 		{ xp: number; commission: number; count: number }
 	> = {};
 
-	claimedRewards.forEach((item: any) => {
-		const quest = item.quest as any;
-		const user = item.user as any;
+	claimedRewards.forEach((item: RewardItem) => {
+		const quest = item.quest;
+		const user = item.user;
 		const questData = quest?.[0];
 
 		if (questData) {

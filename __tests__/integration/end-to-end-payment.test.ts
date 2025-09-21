@@ -1,4 +1,4 @@
-import { paymentReferralHandler } from "@/app/api/webhooks/route";
+import { paymentReferralHandler } from "@/lib/payment-referral-handler";
 import { ProgressTracker } from "@/lib/quest-system/progress-tracker";
 import { RewardManager } from "@/lib/quest-system/reward-manager";
 import { referralManager } from "@/lib/referral-tracking";

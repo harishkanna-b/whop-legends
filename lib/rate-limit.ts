@@ -5,7 +5,7 @@ let redisClient: any = null;
 
 // Redis client mock
 const mockRedisClient = {
-	on: (event: string, callback: Function) => {},
+	on: (_event: string, _callback: Function) => {},
 	connect: async () => {},
 	pipeline: () => ({
 		zremrangebyscore: () => mockRedisClient,

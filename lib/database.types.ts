@@ -491,6 +491,21 @@ export type Database = {
         Args: { xp: number }
         Returns: number
       }
+      get_quest_analytics: {
+        Args: {
+          p_company_id: string
+          p_quest_type: string | null
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: {
+          total_quests: number
+          completed_quests: number
+          completion_rate: number
+          total_users: number
+          average_completion_time: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

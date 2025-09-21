@@ -51,11 +51,11 @@ describe("Character Classes System", () => {
 		it("should have distinct progression paths", () => {
 			const classes = CharacterClassManager.getAvailableClasses();
 
-			classes.forEach((cls) => {
+			for (const cls of classes) {
 				expect(cls.progression.baseXPPerLevel).toBeGreaterThan(0);
 				expect(cls.progression.xpScaling).toBeGreaterThan(1);
 				expect(cls.progression.unlocks.length).toBeGreaterThan(0);
-			});
+			}
 		});
 	});
 

@@ -4,13 +4,10 @@ import {
 } from "@/lib/leaderboards/ranking-engine";
 import {
 	RateLimiters,
-	createRateLimitMiddleware,
 } from "@/lib/security/rate-limit";
-import { SecurityValidator, ValidationError } from "@/lib/security/validation";
+import { SecurityValidator } from "@/lib/security/validation";
 import { type NextRequest, NextResponse } from "next/server";
 
-// Apply rate limiting
-const rateLimitMiddleware = createRateLimitMiddleware(RateLimiters.leaderboard);
 
 const rankingEngine = new RankingEngine();
 
@@ -91,7 +88,7 @@ export async function GET(
 			id: leaderboardId,
 			name: `${category.charAt(0).toUpperCase() + category.slice(1)} Leaderboard`,
 			description: `Top performers in ${category}`,
-			category: category as any,
+			category: category as "overall" | "referrals" | "commission" | "engagement" | "quests" | "retention",
 			timeframe,
 			scoring_method: "weighted",
 			max_entries: limit,

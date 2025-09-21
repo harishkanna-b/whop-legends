@@ -32,7 +32,7 @@ export default function WhopDevWrapper({
 						"Running in development mode - Whop context detection skipped",
 					);
 				}
-			} catch (err) {
+			} catch (_err) {
 				console.log("Not running in Whop iframe context");
 				setIsWhopContext(false);
 			}

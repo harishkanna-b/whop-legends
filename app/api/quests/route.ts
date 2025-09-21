@@ -1,8 +1,8 @@
 import { createErrorResponse, createSuccessResponse } from "@/lib/api-response";
 import { QuestEngine } from "@/lib/quest-system/quest-engine";
 import { supabase } from "@/lib/supabase-client";
-import type { QuestFilters } from "@/lib/types/quest-types";
-import { type NextRequest, NextResponse } from "next/server";
+// import type { QuestFilters } from "@/lib/types/quest-types";
+import { type NextRequest } from "next/server";
 
 /**
  * GET /api/quests - Get user's active quests
@@ -23,11 +23,11 @@ export async function GET(request: NextRequest) {
 
 		if (questType || status || difficulty) {
 			// If filters are provided, use filtered query
-			const filters: QuestFilters = {
-				quest_type: questType as any,
-				status: status as any,
-				difficulty: difficulty as any,
-			};
+			// const filters: QuestFilters = {
+			// 	quest_type: questType as any,
+			// 	status: status as any,
+			// 	difficulty: difficulty as any,
+			// };
 			// For now, just get all quests - filtering would need to be implemented
 			quests = await QuestEngine.getUserActiveQuests(userId);
 		} else {

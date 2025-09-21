@@ -10,7 +10,7 @@ describe("ErrorManager System", () => {
 		jest.clearAllMocks();
 		jest.useFakeTimers();
 		// Reset singleton instance for testing
-		(ErrorManager as any).instance = null;
+		ErrorManager.resetInstance();
 	});
 
 	afterEach(() => {
@@ -169,7 +169,7 @@ describe("ErrorManager System", () => {
 		});
 
 		it("should have default recovery strategies", () => {
-			const strategies = (errorManager as any).recoveryStrategies;
+			const strategies = errorManager.getRecoveryStrategies();
 			expect(strategies.has("database")).toBe(true);
 			expect(strategies.has("external_api")).toBe(true);
 			expect(strategies.has("payment")).toBe(true);
@@ -259,10 +259,9 @@ describe("ErrorManager System", () => {
 				};
 
 				// Test the delay calculation directly instead of timing
-				const testManager = errorManager as any;
-				const delay1 = testManager.calculateRetryDelay(strategy, 1);
-				const delay2 = testManager.calculateRetryDelay(strategy, 2);
-				const delay3 = testManager.calculateRetryDelay(strategy, 3);
+				const delay1 = errorManager.calculateRetryDelayForTesting(strategy, 1);
+				const delay2 = errorManager.calculateRetryDelayForTesting(strategy, 2);
+				const delay3 = errorManager.calculateRetryDelayForTesting(strategy, 3);
 
 				// In test mode, delays should be capped at 10ms
 				expect(delay1).toBe(10);
@@ -279,12 +278,10 @@ describe("ErrorManager System", () => {
 				};
 
 				// Test the delay calculation directly
-				const testManager = errorManager as any;
-
 				// Test multiple times to ensure jitter is applied
 				const delays = [];
 				for (let i = 0; i < 10; i++) {
-					const delay = testManager.calculateRetryDelay(strategy, 1);
+					const delay = errorManager.calculateRetryDelayForTesting(strategy, 1);
 					delays.push(delay);
 				}
 
@@ -347,7 +344,7 @@ describe("ErrorManager System", () => {
 				expect(operation2).toHaveBeenCalledTimes(1);
 
 				// Should use the same circuit breaker instance
-				const circuitBreakers = (errorManager as any).circuitBreakers;
+				const circuitBreakers = errorManager.getCircuitBreakers();
 				expect(circuitBreakers.has("shared-circuit")).toBe(true);
 			});
 		});
@@ -413,8 +410,8 @@ describe("ErrorManager System", () => {
 				});
 
 				// Simulate error logging
-				(errorManager as any).logError(error1);
-				(errorManager as any).logError(error2);
+				errorManager.logErrorForTesting(error1);
+				errorManager.logErrorForTesting(error2);
 
 				const metrics = errorManager.getErrorMetrics();
 
@@ -429,8 +426,8 @@ describe("ErrorManager System", () => {
 				// Simulate old metrics
 				const oldHourKey = Math.floor(
 					(Date.now() - 25 * 60 * 60 * 1000) / (60 * 60 * 1000),
-				);
-				const errorMetrics = (errorManager as any).errorMetrics;
+				).toString();
+				const errorMetrics = errorManager.getErrorMetricsInternal();
 				errorMetrics.set(oldHourKey, {
 					total: 100,
 					byType: { OLD_ERROR: 100 },
@@ -446,7 +443,7 @@ describe("ErrorManager System", () => {
 					{ component: "RecentComponent", operation: "recent" },
 				);
 
-				(errorManager as any).logError(recentError);
+				errorManager.logErrorForTesting(recentError);
 
 				const metrics = errorManager.getErrorMetrics();
 
@@ -469,7 +466,7 @@ describe("ErrorManager System", () => {
 				});
 
 				// Simulate error logging
-				(errorManager as any).logError(error);
+				errorManager.logErrorForTesting(error);
 
 				expect(mockHandler).toHaveBeenCalledWith(error);
 			});
@@ -487,7 +484,7 @@ describe("ErrorManager System", () => {
 
 				// Should not throw when handler fails
 				expect(() => {
-					(errorManager as any).logError(error);
+					errorManager.logErrorForTesting(error);
 				}).not.toThrow();
 
 				expect(failingHandler).toHaveBeenCalledWith(error);
@@ -500,32 +497,22 @@ describe("ErrorManager System", () => {
 
 				// Test timeout errors
 				const timeoutError = { code: "ETIMEDOUT" };
-				expect((errorManager as any).determineSeverity(timeoutError)).toBe(
-					"high",
-				);
+				expect(errorManager.determineSeverityForTesting(timeoutError)).toBe("high");
 
 				// Test database errors
 				const dbError = { code: "DATABASE_ERROR" };
-				expect((errorManager as any).determineSeverity(dbError)).toBe(
-					"critical",
-				);
+				expect(errorManager.determineSeverityForTesting(dbError)).toBe("critical");
 
 				// Test HTTP errors
 				const serverError = { status: 500 };
-				expect((errorManager as any).determineSeverity(serverError)).toBe(
-					"high",
-				);
+				expect(errorManager.determineSeverityForTesting(serverError)).toBe("high");
 
 				const clientError = { status: 400 };
-				expect((errorManager as any).determineSeverity(clientError)).toBe(
-					"medium",
-				);
+				expect(errorManager.determineSeverityForTesting(clientError)).toBe("medium");
 
 				// Test unknown errors
 				const unknownError = {};
-				expect((errorManager as any).determineSeverity(unknownError)).toBe(
-					"low",
-				);
+				expect(errorManager.determineSeverityForTesting(unknownError)).toBe("low");
 			});
 		});
 
@@ -535,22 +522,20 @@ describe("ErrorManager System", () => {
 
 				// Test retryable error codes
 				const timeoutError = { code: "ETIMEDOUT" };
-				expect((errorManager as any).isRetryable(timeoutError)).toBe(true);
+				expect(errorManager.isRetryableForTesting(timeoutError)).toBe(true);
 
 				const serverError = { status: 500 };
-				expect((errorManager as any).isRetryable(serverError)).toBe(true);
+				expect(errorManager.isRetryableForTesting(serverError)).toBe(true);
 
 				const explicitlyRetryable = { retryable: true };
-				expect((errorManager as any).isRetryable(explicitlyRetryable)).toBe(
-					true,
-				);
+				expect(errorManager.isRetryableForTesting(explicitlyRetryable)).toBe(true);
 
 				// Test non-retryable errors
 				const clientError = { status: 400 };
-				expect((errorManager as any).isRetryable(clientError)).toBe(false);
+				expect(errorManager.isRetryableForTesting(clientError)).toBe(false);
 
 				const nonRetryable = { code: "NON_RETRYABLE" };
-				expect((errorManager as any).isRetryable(nonRetryable)).toBe(false);
+				expect(errorManager.isRetryableForTesting(nonRetryable)).toBe(false);
 			});
 		});
 

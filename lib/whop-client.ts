@@ -102,6 +102,7 @@ export const whopApi = {
 	// List receipts for a user (payment history) - not implemented in current API
 	async getUserReceipts(
 		userId: string,
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		_options?: { first?: number; after?: string },
 	) {
 		try {

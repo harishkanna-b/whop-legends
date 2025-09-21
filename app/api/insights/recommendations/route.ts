@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		const filters: any = { timeframe };
+		const filters: {
+		type?: string;
+		category?: string;
+		priority?: string;
+		acknowledged?: boolean;
+		timeframe?: "7d" | "30d" | "90d";
+	} = { timeframe };
 
 		if (type) filters.type = type;
 		if (category) filters.category = category;

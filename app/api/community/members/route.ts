@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
 			search,
 			character_class: characterClass,
 			status: status as "active" | "inactive" | "all",
-			sort_by: sortBy as any,
-			sort_order: sortOrder as any,
+			sort_by: sortBy as "total_commission" | "total_referrals" | "level" | "engagement_score" | "last_active",
+			sort_order: sortOrder as "asc" | "desc",
 		};
 
 		// Parse range filters
