@@ -1,129 +1,140 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
-import { config } from '../lib/config'
+import { execSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { config } from "../lib/config";
 
 class ProductionDeployer {
-  constructor() {
-    this.validateEnvironment()
-  }
+	constructor() {
+		this.validateEnvironment();
+	}
 
-  private validateEnvironment(): void {
-    console.log('🔍 Validating environment configuration...')
+	private validateEnvironment(): void {
+		console.log("🔍 Validating environment configuration...");
 
-    const validation = config.validate()
-    if (!validation.valid) {
-      console.error('❌ Configuration validation failed:')
-      validation.errors.forEach(error => {
-        console.error(`   - ${error}`)
-      })
-      process.exit(1)
-    }
+		const validation = config.validate();
+		if (!validation.valid) {
+			console.error("❌ Configuration validation failed:");
+			validation.errors.forEach((error) => {
+				console.error(`   - ${error}`);
+			});
+			process.exit(1);
+		}
 
-    console.log('✅ Configuration is valid')
-  }
+		console.log("✅ Configuration is valid");
+	}
 
-  private checkDependencies(): void {
-    console.log('📦 Checking dependencies...')
+	private checkDependencies(): void {
+		console.log("📦 Checking dependencies...");
 
-    try {
-      // Check if Redis is available
-      const redisUrl = config.get().redis.url
-      if (redisUrl && !redisUrl.startsWith('redis://localhost')) {
-        console.log('🔗 Testing Redis connection...')
-        execSync('redis-cli ping', { stdio: 'pipe' })
-        console.log('✅ Redis connection successful')
-      }
-    } catch (error) {
-      console.warn('⚠️  Redis connection test failed - will use fallback rate limiting')
-    }
+		try {
+			// Check if Redis is available
+			const redisUrl = config.get().redis.url;
+			if (redisUrl && !redisUrl.startsWith("redis://localhost")) {
+				console.log("🔗 Testing Redis connection...");
+				execSync("redis-cli ping", { stdio: "pipe" });
+				console.log("✅ Redis connection successful");
+			}
+		} catch (error) {
+			console.warn(
+				"⚠️  Redis connection test failed - will use fallback rate limiting",
+			);
+		}
 
-    // Check database connection
-    try {
-      console.log('🗄️  Testing database connection...')
-      execSync('npx prisma db push', { stdio: 'pipe' })
-      console.log('✅ Database connection successful')
-    } catch (error) {
-      console.error('❌ Database connection failed')
-      process.exit(1)
-    }
-  }
+		// Check database connection
+		try {
+			console.log("🗄️  Testing database connection...");
+			execSync("npx prisma db push", { stdio: "pipe" });
+			console.log("✅ Database connection successful");
+		} catch (error) {
+			console.error("❌ Database connection failed");
+			process.exit(1);
+		}
+	}
 
-  private runTests(): void {
-    console.log('🧪 Running tests...')
+	private runTests(): void {
+		console.log("🧪 Running tests...");
 
-    try {
-      execSync('npm test', { stdio: 'inherit' })
-      console.log('✅ All tests passed')
-    } catch (error) {
-      console.error('❌ Tests failed')
-      process.exit(1)
-    }
-  }
+		try {
+			execSync("npm test", { stdio: "inherit" });
+			console.log("✅ All tests passed");
+		} catch (error) {
+			console.error("❌ Tests failed");
+			process.exit(1);
+		}
+	}
 
-  private buildApplication(): void {
-    console.log('🏗️  Building application...')
+	private buildApplication(): void {
+		console.log("🏗️  Building application...");
 
-    try {
-      execSync('npm run build', { stdio: 'inherit' })
-      console.log('✅ Build successful')
-    } catch (error) {
-      console.error('❌ Build failed')
-      process.exit(1)
-    }
-  }
+		try {
+			execSync("npm run build", { stdio: "inherit" });
+			console.log("✅ Build successful");
+		} catch (error) {
+			console.error("❌ Build failed");
+			process.exit(1);
+		}
+	}
 
-  private setupEnvironment(): void {
-    console.log('🌍 Setting up production environment...')
+	private setupEnvironment(): void {
+		console.log("🌍 Setting up production environment...");
 
-    const requiredEnvVars = [
-      'NODE_ENV',
-      'DATABASE_URL',
-      'WHOP_WEBHOOK_SECRET',
-      'REDIS_URL',
-      'WHOP_API_KEY',
-      'NEXT_PUBLIC_WHOP_APP_ID',
-      'NEXT_PUBLIC_WHOP_COMPANY_ID'
-    ]
+		const requiredEnvVars = [
+			"NODE_ENV",
+			"DATABASE_URL",
+			"WHOP_WEBHOOK_SECRET",
+			"REDIS_URL",
+			"WHOP_API_KEY",
+			"NEXT_PUBLIC_WHOP_APP_ID",
+			"NEXT_PUBLIC_WHOP_COMPANY_ID",
+		];
 
-    const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
+		const missingVars = requiredEnvVars.filter(
+			(varName) => !process.env[varName],
+		);
 
-    if (missingVars.length > 0) {
-      console.error('❌ Missing required environment variables:')
-      missingVars.forEach(varName => {
-        console.error(`   - ${varName}`)
-      })
-      console.error('\nPlease set these variables in your production environment')
-      process.exit(1)
-    }
+		if (missingVars.length > 0) {
+			console.error("❌ Missing required environment variables:");
+			missingVars.forEach((varName) => {
+				console.error(`   - ${varName}`);
+			});
+			console.error(
+				"\nPlease set these variables in your production environment",
+			);
+			process.exit(1);
+		}
 
-    console.log('✅ Environment variables are set')
-  }
+		console.log("✅ Environment variables are set");
+	}
 
-  private optimizeForProduction(): void {
-    console.log('⚡ Optimizing for production...')
+	private optimizeForProduction(): void {
+		console.log("⚡ Optimizing for production...");
 
-    // Set production-specific optimizations
-    process.env = { ...process.env, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', NEXT_PRIVATE_TARGET: 'server' }
+		// Set production-specific optimizations
+		process.env = {
+			...process.env,
+			NODE_ENV: "production",
+			NEXT_TELEMETRY_DISABLED: "1",
+			NEXT_PRIVATE_TARGET: "server",
+		};
 
-    // Optimize rate limiting for production
-    config.update({
-      rateLimiting: {
-        ...config.get().rateLimiting,
-        useRedis: true,
-        enabled: true
-      }
-    })
+		// Optimize rate limiting for production
+		config.update({
+			rateLimiting: {
+				...config.get().rateLimiting,
+				useRedis: true,
+				enabled: true,
+			},
+		});
 
-    console.log('✅ Production optimizations applied')
-  }
+		console.log("✅ Production optimizations applied");
+	}
 
-  private createHealthCheck(): void {
-    console.log('💓 Setting up health check...')
+	private createHealthCheck(): void {
+		console.log("💓 Setting up health check...");
 
-    const healthCheckContent = `
+		const healthCheckContent = `
 import { NextRequest, NextResponse } from 'next/server'
 import { config } from '@/lib/config'
 import { createClient } from 'redis'
@@ -182,17 +193,17 @@ export async function GET(request: NextRequest) {
   const statusCode = health.status === 'healthy' ? 200 : 503
   return NextResponse.json(health, { status: statusCode })
 }
-`
+`;
 
-    const healthCheckPath = path.join(process.cwd(), 'app/api/health/route.ts')
-    fs.writeFileSync(healthCheckPath, healthCheckContent)
-    console.log('✅ Health check endpoint created')
-  }
+		const healthCheckPath = path.join(process.cwd(), "app/api/health/route.ts");
+		fs.writeFileSync(healthCheckPath, healthCheckContent);
+		console.log("✅ Health check endpoint created");
+	}
 
-  private createMetricsEndpoint(): void {
-    console.log('📊 Setting up metrics endpoint...')
+	private createMetricsEndpoint(): void {
+		console.log("📊 Setting up metrics endpoint...");
 
-    const metricsContent = `
+		const metricsContent = `
 import { NextRequest, NextResponse } from 'next/server'
 import { config } from '@/lib/config'
 
@@ -222,17 +233,17 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(metrics)
 }
-`
+`;
 
-    const metricsPath = path.join(process.cwd(), 'app/api/metrics/route.ts')
-    fs.writeFileSync(metricsPath, metricsContent)
-    console.log('✅ Metrics endpoint created')
-  }
+		const metricsPath = path.join(process.cwd(), "app/api/metrics/route.ts");
+		fs.writeFileSync(metricsPath, metricsContent);
+		console.log("✅ Metrics endpoint created");
+	}
 
-  private generateDockerConfig(): void {
-    console.log('🐳 Generating Docker configuration...')
+	private generateDockerConfig(): void {
+		console.log("🐳 Generating Docker configuration...");
 
-    const dockerfileContent = `
+		const dockerfileContent = `
 FROM node:18-alpine
 
 WORKDIR /app
@@ -246,9 +257,9 @@ RUN npm run build
 EXPOSE 3000
 
 CMD ["npm", "start"]
-`
+`;
 
-    const dockerComposeContent = `
+		const dockerComposeContent = `
 version: '3.8'
 
 services:
@@ -270,8 +281,8 @@ services:
     image: postgres:15
     environment:
       - POSTGRES_DB=whop_legends
-      - POSTGRES_USER=${process.env.DB_USER || 'postgres'}
-      - POSTGRES_PASSWORD=${process.env.DB_PASSWORD || 'password'}
+      - POSTGRES_USER=${process.env.DB_USER || "postgres"}
+      - POSTGRES_PASSWORD=${process.env.DB_PASSWORD || "password"}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -286,17 +297,17 @@ services:
 volumes:
   postgres_data:
   redis_data:
-`
+`;
 
-    fs.writeFileSync('Dockerfile', dockerfileContent)
-    fs.writeFileSync('docker-compose.yml', dockerComposeContent)
-    console.log('✅ Docker configuration generated')
-  }
+		fs.writeFileSync("Dockerfile", dockerfileContent);
+		fs.writeFileSync("docker-compose.yml", dockerComposeContent);
+		console.log("✅ Docker configuration generated");
+	}
 
-  private generateNginxConfig(): void {
-    console.log('🔧 Generating Nginx configuration...')
+	private generateNginxConfig(): void {
+		console.log("🔧 Generating Nginx configuration...");
 
-    const nginxContent = `
+		const nginxContent = `
 server {
     listen 80;
     server_name your-domain.com;
@@ -369,46 +380,45 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
-`
+`;
 
-    fs.writeFileSync('nginx.conf', nginxContent)
-    console.log('✅ Nginx configuration generated')
-  }
+		fs.writeFileSync("nginx.conf", nginxContent);
+		console.log("✅ Nginx configuration generated");
+	}
 
-  async deploy(): Promise<void> {
-    console.log('🚀 Starting production deployment...\n')
+	async deploy(): Promise<void> {
+		console.log("🚀 Starting production deployment...\n");
 
-    try {
-      this.setupEnvironment()
-      this.checkDependencies()
-      this.runTests()
-      this.optimizeForProduction()
-      this.buildApplication()
-      this.createHealthCheck()
-      this.createMetricsEndpoint()
-      this.generateDockerConfig()
-      this.generateNginxConfig()
+		try {
+			this.setupEnvironment();
+			this.checkDependencies();
+			this.runTests();
+			this.optimizeForProduction();
+			this.buildApplication();
+			this.createHealthCheck();
+			this.createMetricsEndpoint();
+			this.generateDockerConfig();
+			this.generateNginxConfig();
 
-      console.log('\n✅ Production deployment completed successfully!')
-      console.log('\n📋 Next steps:')
-      console.log('   1. Review generated Docker and Nginx configurations')
-      console.log('   2. Set up your production database and Redis')
-      console.log('   3. Configure your domain and SSL certificates')
-      console.log('   4. Deploy using: docker-compose up -d')
-      console.log('   5. Monitor health check at: /api/health')
-      console.log('   6. Monitor metrics at: /api/metrics')
-
-    } catch (error) {
-      console.error('\n❌ Deployment failed:', error)
-      process.exit(1)
-    }
-  }
+			console.log("\n✅ Production deployment completed successfully!");
+			console.log("\n📋 Next steps:");
+			console.log("   1. Review generated Docker and Nginx configurations");
+			console.log("   2. Set up your production database and Redis");
+			console.log("   3. Configure your domain and SSL certificates");
+			console.log("   4. Deploy using: docker-compose up -d");
+			console.log("   5. Monitor health check at: /api/health");
+			console.log("   6. Monitor metrics at: /api/metrics");
+		} catch (error) {
+			console.error("\n❌ Deployment failed:", error);
+			process.exit(1);
+		}
+	}
 }
 
 // Run deployment if this script is executed directly
 if (require.main === module) {
-  const deployer = new ProductionDeployer()
-  deployer.deploy().catch(console.error)
+	const deployer = new ProductionDeployer();
+	deployer.deploy().catch(console.error);
 }
 
-export default ProductionDeployer
+export default ProductionDeployer;

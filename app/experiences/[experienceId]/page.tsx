@@ -22,7 +22,9 @@ export default async function ExperiencePage({
 		});
 
 		const user = await whopSdk.users.getUser({ userId });
-		const experience = await whopSdk.experiences.getExperience({ experienceId });
+		const experience = await whopSdk.experiences.getExperience({
+			experienceId,
+		});
 
 		// Either: 'admin' | 'customer' | 'no_access';
 		// 'admin' means the user is an admin of the whop, such as an owner or moderator
@@ -47,21 +49,32 @@ export default async function ExperiencePage({
 		);
 	} catch (error) {
 		// Handle authentication errors gracefully
-		if (error instanceof Error && error.message.includes('App API Key')) {
+		if (error instanceof Error && error.message.includes("App API Key")) {
 			return (
 				<div className="flex justify-center items-center h-screen px-8">
 					<div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6 text-center">
 						<div className="text-6xl mb-4">🚀</div>
-						<h1 className="text-2xl font-bold text-gray-900 mb-4">Whop Legends Experience</h1>
+						<h1 className="text-2xl font-bold text-gray-900 mb-4">
+							Whop Legends Experience
+						</h1>
 						<div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
 							<p className="text-yellow-800 text-sm">
-								Whop authentication required. This experience needs to run within Whop.com ecosystem.
+								Whop authentication required. This experience needs to run
+								within Whop.com ecosystem.
 							</p>
 						</div>
 						<div className="space-y-2 text-sm text-gray-600">
-							<p>📋 <strong>Development Mode:</strong> This is a gamified referral system experience.</p>
-							<p>🔧 <strong>To test:</strong> Access through your Whop dashboard.</p>
-							<p>🌐 <strong>Full experience:</strong> Available within Whop.com iframe.</p>
+							<p>
+								📋 <strong>Development Mode:</strong> This is a gamified
+								referral system experience.
+							</p>
+							<p>
+								🔧 <strong>To test:</strong> Access through your Whop dashboard.
+							</p>
+							<p>
+								🌐 <strong>Full experience:</strong> Available within Whop.com
+								iframe.
+							</p>
 						</div>
 					</div>
 				</div>
@@ -73,7 +86,9 @@ export default async function ExperiencePage({
 			<div className="flex justify-center items-center h-screen px-8">
 				<div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6 text-center">
 					<div className="text-6xl mb-4">⚠️</div>
-					<h1 className="text-2xl font-bold text-gray-900 mb-4">Experience Error</h1>
+					<h1 className="text-2xl font-bold text-gray-900 mb-4">
+						Experience Error
+					</h1>
 					<div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
 						<p className="text-red-800 text-sm">
 							Unable to load experience. Please try again later.

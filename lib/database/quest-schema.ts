@@ -1,70 +1,74 @@
 // Quest System Database Schema
 // Based on Story 1.4: Quest System and Daily Challenges
 
-import { QuestType, QuestDifficulty, RequirementType } from '../types/quest-types';
+import type {
+	QuestDifficulty,
+	QuestType,
+	RequirementType,
+} from "../types/quest-types";
 
 // Quest Tables Schema Definitions
 
-export const QUESTS_TABLE = 'quests';
-export const USER_QUESTS_TABLE = 'user_quests';
-export const QUEST_REQUIREMENTS_TABLE = 'quest_requirements';
-export const QUEST_TEMPLATES_TABLE = 'quest_templates';
+export const QUESTS_TABLE = "quests";
+export const USER_QUESTS_TABLE = "user_quests";
+export const QUEST_REQUIREMENTS_TABLE = "quest_requirements";
+export const QUEST_TEMPLATES_TABLE = "quest_templates";
 
 // Quests Table Schema
 export interface QuestsTable {
-  id: string; // UUID PK
-  company_id: string; // UUID FK to companies
-  title: string; // VARCHAR(255)
-  description: string; // TEXT
-  quest_type: QuestType; // ENUM('daily', 'weekly', 'monthly', 'special')
-  difficulty: QuestDifficulty; // ENUM('easy', 'medium', 'hard', 'epic')
-  target_type: RequirementType; // ENUM('referrals', 'commission', 'level', 'achievements', 'clicks')
-  target_value: number; // INTEGER
-  reward_xp: number; // INTEGER
-  reward_commission: number; // DECIMAL(10,2)
-  is_active: boolean; // BOOLEAN DEFAULT true
-  start_date: Date; // TIMESTAMP WITH TIME ZONE
-  end_date: Date; // TIMESTAMP WITH TIME ZONE
-  created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	id: string; // UUID PK
+	company_id: string; // UUID FK to companies
+	title: string; // VARCHAR(255)
+	description: string; // TEXT
+	quest_type: QuestType; // ENUM('daily', 'weekly', 'monthly', 'special')
+	difficulty: QuestDifficulty; // ENUM('easy', 'medium', 'hard', 'epic')
+	target_type: RequirementType; // ENUM('referrals', 'commission', 'level', 'achievements', 'clicks')
+	target_value: number; // INTEGER
+	reward_xp: number; // INTEGER
+	reward_commission: number; // DECIMAL(10,2)
+	is_active: boolean; // BOOLEAN DEFAULT true
+	start_date: Date; // TIMESTAMP WITH TIME ZONE
+	end_date: Date; // TIMESTAMP WITH TIME ZONE
+	created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 }
 
 // User Quests Table Schema
 export interface UserQuestsTable {
-  id: string; // UUID PK
-  user_id: string; // UUID FK to users
-  quest_id: string; // UUID FK to quests
-  progress: number; // INTEGER DEFAULT 0
-  status: 'active' | 'completed' | 'failed' | 'expired'; // ENUM DEFAULT 'active'
-  started_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  completed_at: Date; // TIMESTAMP WITH TIME ZONE (nullable)
-  created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	id: string; // UUID PK
+	user_id: string; // UUID FK to users
+	quest_id: string; // UUID FK to quests
+	progress: number; // INTEGER DEFAULT 0
+	status: "active" | "completed" | "failed" | "expired"; // ENUM DEFAULT 'active'
+	started_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	completed_at: Date; // TIMESTAMP WITH TIME ZONE (nullable)
+	created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 }
 
 // Quest Requirements Table Schema
 export interface QuestRequirementsTable {
-  id: string; // UUID PK
-  quest_id: string; // UUID FK to quests
-  requirement_type: RequirementType; // ENUM
-  target_value: number; // INTEGER
-  description: string; // VARCHAR(500)
-  order_index: number; // INTEGER DEFAULT 0
-  created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	id: string; // UUID PK
+	quest_id: string; // UUID FK to quests
+	requirement_type: RequirementType; // ENUM
+	target_value: number; // INTEGER
+	description: string; // VARCHAR(500)
+	order_index: number; // INTEGER DEFAULT 0
+	created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 }
 
 // Quest Templates Table Schema
 export interface QuestTemplatesTable {
-  id: string; // UUID PK
-  template_name: string; // VARCHAR(255) UNIQUE
-  quest_type: QuestType; // ENUM
-  difficulty: QuestDifficulty; // ENUM
-  base_reward_xp: number; // INTEGER
-  base_reward_commission: number; // DECIMAL(10,2)
-  requirements_template: any; // JSONB for flexible template storage
-  is_active: boolean; // BOOLEAN DEFAULT true
-  created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-  updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	id: string; // UUID PK
+	template_name: string; // VARCHAR(255) UNIQUE
+	quest_type: QuestType; // ENUM
+	difficulty: QuestDifficulty; // ENUM
+	base_reward_xp: number; // INTEGER
+	base_reward_commission: number; // DECIMAL(10,2)
+	requirements_template: any; // JSONB for flexible template storage
+	is_active: boolean; // BOOLEAN DEFAULT true
+	created_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	updated_at: Date; // TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 }
 
 // SQL Schema Definitions

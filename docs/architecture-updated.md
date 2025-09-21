@@ -538,7 +538,7 @@ async function handleAffiliateReward(data: any) {
     });
 
   // Update quest progress
-  await supabaseService.rpc('update_quest_progress', {
+  await supabaseService().rpc('update_quest_progress', {
     user_id: user.id,
     quest_type: 'referrals',
     progress_value: 1

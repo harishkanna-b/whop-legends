@@ -1,22 +1,22 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "devCommand": "pnpm dev",
-  "outputDirectory": null,
-  "routes": [
-    {
-      "src": "/experiences/(.*)",
-      "dest": "/experiences/$1"
-    },
-    {
-      "src": "/discover",
-      "dest": "/discover"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ]
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"framework": "nextjs",
+	"buildCommand": "pnpm build",
+	"installCommand": "pnpm install",
+	"devCommand": "pnpm dev",
+	"outputDirectory": null,
+	"routes": [
+		{
+			"src": "/experiences/(.*)",
+			"dest": "/experiences/$1"
+		},
+		{
+			"src": "/discover",
+			"dest": "/discover"
+		},
+		{
+			"src": "/(.*)",
+			"dest": "/$1"
+		}
+	]
 }
